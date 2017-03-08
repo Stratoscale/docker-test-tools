@@ -1,0 +1,15 @@
+version: '2'
+
+networks:
+  tests-network:
+    driver: bridge
+
+services:
+
+  consul.service:
+    image: consul
+    networks: [tests-network]
+
+  redis.service:
+    image: redis:alpine
+    networks: [tests-network]

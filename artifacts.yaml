@@ -1,0 +1,2 @@
+pips:
+  - dist/docker-test-tools-*.tar.gz

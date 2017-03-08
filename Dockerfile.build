@@ -1,0 +1,7 @@
+FROM rackattack-nas.dc1:5000/dev-base:68edfd0d862e1a24764daea9d2c55eb360190ad5
+
+COPY test-requirements.txt /tmp/test-requirements.txt
+RUN pip install --no-cache-dir -r /tmp/test-requirements.txt
+
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
