@@ -12,7 +12,7 @@ The `docker-test-tools` package makes it easy to write tests that relies on dock
 
 ## Setup
 
-### Define a docker compose file describing the required test environment
+### Define a Docker Compose File Describing the Required Environment
 
 For example: `docker-compose.yml`
 ```yml
@@ -55,7 +55,7 @@ docker-compose-path = tests/docker-compose.yml
 > **NOTE**: Make sure you configure your `skipper.yml` with the proper `build-container-net` option, based on the `project-name` and `network`.
 e.g `build-container-net: test_tests-network`
 
-### Define tests based on `DockerBaseTest`
+### Define Tests Based on `DockerBaseTest`
 
 For example: `test_example.py`
 ```python
@@ -99,7 +99,7 @@ OK
 
 ## Integrating With `pytest`
 ---
-### Define a conftest.py file describing the required fixture
+### Define a conftest.py File Describing The Required Fixture
 
 ```python
 """utilized by in pytest configuration."""
@@ -116,7 +116,7 @@ def global_setup_teardown():
     EnvironmentLayer.tearDown()
 ```
 
-### Run the tests
+### Run the Tests
 ```
 $ CONFIG=tests/pytest_example/test.cfg pytest tests/pytest_example/
 ```
