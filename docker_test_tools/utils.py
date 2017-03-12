@@ -50,4 +50,3 @@ def get_curl_health_check(service_name, url):
         return is_ready
 
     return curl_health_check
-

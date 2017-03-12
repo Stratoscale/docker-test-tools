@@ -44,6 +44,19 @@ class TestEnvironmentController(unittest.TestCase):
                 stderr=subprocess.STDOUT
             )
 
+            health_check = mock.MagicMock(return_value=True)
+            with self.controller.container_down('test', health_check):
+                mocked_check_output.assert_called_with(
+                    ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'kill', 'test'],
+                    stderr=subprocess.STDOUT
+                )
+
+            health_check.assert_called_once_with()
+            mocked_check_output.assert_called_with(
+                ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'restart', 'test'],
+                stderr=subprocess.STDOUT
+            )
+
             self.controller.get_containers_logs()
             mocked_check_output.assert_called_with(
                 'docker-compose -f {compose_path} -p {project_name} logs --no-color > {log_path}'.format(
@@ -64,6 +77,12 @@ class TestEnvironmentController(unittest.TestCase):
 
         with self.assertRaises(RuntimeError):
             self.controller.remove_containers()
+
+        with self.assertRaises(RuntimeError):
+            self.controller.kill_container('test')
+
+        with self.assertRaises(RuntimeError):
+            self.controller.restart_container('test')
 
     @mock.patch('docker_test_tools.environment.EnvironmentController.kill_containers')
     @mock.patch('docker_test_tools.environment.EnvironmentController.remove_containers')

@@ -1,6 +1,10 @@
 import logging
 import subprocess
 
+from contextlib import contextmanager
+
+import utils
+
 
 class EnvironmentController(object):
     """Utility for managing environment operations."""
@@ -42,7 +46,7 @@ class EnvironmentController(object):
         Kills and removes the environment containers.
         """
         if self.reuse_containers:
-            logging.warning("container reuse enabled: Skipping environment cleanup")
+            logging.warning("Container reuse enabled: Skipping environment cleanup")
             return
 
         self.kill_containers()
@@ -93,3 +97,59 @@ class EnvironmentController(object):
             )
         except subprocess.CalledProcessError as error:
             raise RuntimeError("Failed removing environment containers, reason: \n%s", error.output)
+
+    def kill_container(self, name):
+        """Kill the container.
+
+        :param str name: container name as it appears in the docker compose file.
+        """
+        logging.debug("Killing container %s, using docker compose: %s", name, self.compose_path)
+        try:
+            subprocess.check_output(
+                ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'kill', name],
+                stderr=subprocess.STDOUT
+            )
+        except subprocess.CalledProcessError as error:
+            raise RuntimeError("Failed killing container %s  reason: \n%s", name, error.output)
+
+    def restart_container(self, name):
+        """Restart the container.
+
+        :param str name: container name as it appears in the docker compose file.
+        """
+        logging.debug("Restarting container %s, using docker compose: %s", name, self.compose_path)
+        try:
+            subprocess.check_output(
+                ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'restart', name],
+                stderr=subprocess.STDOUT
+            )
+        except subprocess.CalledProcessError as error:
+            raise RuntimeError("Failed restarting container %s  reason: \n%s", name, error.output)
+
+    @contextmanager
+    def container_down(self, name, health_check, interval=1, timeout=60):
+        """Container down context manager.
+
+        Simulate container down scenario by killing the container within the context,
+        once context ends restart the container and wait for the health check to pass.
+
+        :param str name: container name as it appears in the docker compose file.
+        :param callable health_check: callable used to verify the container health.
+        :param int interval: interval (in seconds) between checks.
+        :param int timeout: timeout (in seconds) for all checks to pass.
+
+        Usage:
+
+        >>> health_check = utils.get_curl_health_check(service_name='consul', url='http://consul.service:8500')
+        >>>
+        >>> with controller.service_down(service_name='consul', health_check=health_check):
+        >>>     # container will be down in this context
+        >>>
+        >>> # container will be back up after context end
+        """
+        self.kill_container(name=name)
+        try:
+            yield
+        finally:
+            self.restart_container(name=name)
+            utils.run_health_checks(checks=[health_check, ], interval=interval, timeout=timeout)

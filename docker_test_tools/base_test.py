@@ -1,7 +1,10 @@
+import os
 import unittest
 
 import layer
 import utils
+import config
+import environment
 
 
 class BaseDockerTest(unittest.TestCase):
@@ -16,8 +19,14 @@ class BaseDockerTest(unittest.TestCase):
     * HEALTH_CHECKS_INTERVAL: Define the interval (in seconds) for sampling required services health checks.
 
     """
+    config = config.Config(config_path=os.environ.get('CONFIG', None))
+    controller = environment.EnvironmentController(log_path=config.log_path,
+                                                   project_name=config.project_name,
+                                                   compose_path=config.docker_compose_path,
+                                                   reuse_containers=config.reuse_containers)
+
     # Define the common methods for the subsystem tests (global setUp and tearDown, and testSetUp).
-    layer = layer.EnvironmentLayer
+    layer = layer.get_layer(controller=controller)
 
     # Override this value to define the health checks (callables) to pass up before the test starts running.
     REQUIRED_HEALTH_CHECKS = []

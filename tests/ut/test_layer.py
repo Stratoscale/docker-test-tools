@@ -1,19 +1,21 @@
 import mock
 import unittest
 
-from docker_test_tools.layer import EnvironmentLayer
+from docker_test_tools import layer
 
 
 class TestLayer(unittest.TestCase):
 
-    @mock.patch('docker_test_tools.environment.EnvironmentController.setup')
-    def test_layer_setup(self, setup_mock):
-        """Validate the layer setUp method."""
-        EnvironmentLayer.setUp()
-        setup_mock.assert_called_once_with()
+    def setUp(self):
+        self.controller = mock.MagicMock()
+        self.layer = layer.get_layer(controller=self.controller)
 
-    @mock.patch('docker_test_tools.environment.EnvironmentController.teardown')
-    def test_layer_teardown(self, teardown_mock):
+    def test_layer_setup(self):
+        """Validate the layer setUp method."""
+        self.layer.setUp()
+        self.controller.setup.assert_called_once_with()
+
+    def test_layer_teardown(self):
         """Validate the layer tearDown method."""
-        EnvironmentLayer.tearDown()
-        teardown_mock.assert_called_once_with()
+        self.layer.tearDown()
+        self.controller.teardown.assert_called_once_with()
