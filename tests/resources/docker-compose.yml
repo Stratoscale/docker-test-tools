@@ -10,6 +10,7 @@ services:
     image: consul
     networks: [tests-network]
 
-  redis.service:
-    image: redis:alpine
+  mocked.service:
+    image: rackattack-nas.dc1:5000/wiremock:e069b8c8ba964a72daf08ad9c01c9147571dc2b5
     networks: [tests-network]
+    command: "9999"

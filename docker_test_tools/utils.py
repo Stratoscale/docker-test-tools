@@ -1,6 +1,7 @@
 import logging
-import waiting
 import subprocess
+
+import waiting
 
 
 def run_health_checks(checks, interval=1, timeout=60):

@@ -2,12 +2,13 @@
 The `docker-test-tools` package makes it easy to write tests that relies on docker containers enviorement in order to operate.
 
 #### Prerequisites
-* The project under test must be [skipper](https://github.com/Stratoscale/skipper) compatible 
+* The project under test must be [skipper](https://github.com/Stratoscale/skipper) compatible. 
 
 #### Features
-* Manage container operation easly within the tests.
+* Manage container operation easily within the tests.
 * Setup and tear down containers environment as part of the tests run flow.
 * Integrated with [nose2](https://nose2.readthedocs.io/en/latest/index.html) and [pytest](http://doc.pytest.org/en/latest/) test runners.
+* Integrated with [wiremock](http://wiremock.org/).
 
 
 ## Setup
@@ -28,11 +29,10 @@ services:
     image: consul
     networks: [tests-network]
 
-  redis.service:
-    image: redis:alpine
+  mocked.service:
+    image: rackattack-nas.dc1:5000/wiremock:e069b8c8ba964a72daf08ad9c01c9147571dc2b5
     networks: [tests-network]
-
-
+    command: "9999"
 ```
 
 ### Define the Environment Configuration File
@@ -59,6 +59,7 @@ e.g `build-container-net: test_tests-network`
 
 For example: `test_example.py`
 ```python
+import os
 import httplib
 import logging
 import requests
@@ -67,26 +68,55 @@ import docker_test_tools as dtt
 
 
 class ExampleTest(dtt.BaseDockerTest):
-    """Sanity test for docker-test-tools."""
+    """Usage example test for docker-test-tools."""
+    CONSUL_SERVICE_NAME = 'consul.service'
+    MOCKED_SERVICE_NAME = 'mocked.service'
+
+    CONSUL_URL = 'http://consul.service:8500'
+    MOCKED_SERVICE_URL = 'http://mocked.service:9999'
+
+    # Define the required services health checks to pass up before the test starts running
     REQUIRED_HEALTH_CHECKS = [
-        dtt.get_curl_health_check(service_name='redis.service', url='http://redis.service:6379'),
-        dtt.get_curl_health_check(service_name='consul.service', url='http://consul.service:8500')
+        dtt.get_curl_health_check(service_name=CONSUL_SERVICE_NAME, url=CONSUL_URL),
+        dtt.get_curl_health_check(service_name=MOCKED_SERVICE_NAME, url=MOCKED_SERVICE_URL)
     ]
 
-    def test_example(self):
-        """Validate the docker-test-tools package."""
+    def test_services_sanity(self):
+        """Validate services are responsive once the test context start."""
         logging.info('Validating consul container is responsive')
-        consul_response = requests.get('http://consul.service:8500/v1/status/leader')
+        consul_response = requests.get(self.CONSUL_URL)
         self.assertEquals(consul_response.status_code, httplib.OK)
 
-        consul_health_check = dtt.get_curl_health_check(service_name='consul.service', url='http://consul.service:8500')
-        with self.controller.container_down(name='consul.service', health_check=consul_health_check):
+    def test_service_down(self):
+        """Validate service down scenario."""
+        logging.info('Validating consul container is responsive')
+        consul_response = requests.get(self.CONSUL_URL)
+        self.assertEquals(consul_response.status_code, httplib.OK)
+
+        logging.info('Validating consul container is unresponsive while in `container_down` context')
+        consul_health_check = dtt.get_curl_health_check(service_name=self.CONSUL_SERVICE_NAME, url=self.CONSUL_URL)
+        with self.controller.container_down(name=self.CONSUL_SERVICE_NAME, health_check=consul_health_check):
             with self.assertRaises(requests.ConnectionError):
-                requests.get('http://consul.service:8500/v1/status/leader')
+                requests.get(self.CONSUL_URL)
 
-        logging.info('Validating consul container is responsive')
-        consul_response = requests.get('http://consul.service:8500/v1/status/leader')
+        logging.info('Validating consul container has recovered and is responsive')
+        consul_response = requests.get(self.CONSUL_URL)
         self.assertEquals(consul_response.status_code, httplib.OK)
+
+    def test_mocked_service_configuration(self):
+        """Validate wiremock service."""
+        logging.info('Validating mocked service fail to find `test` endpoint')
+        mocked_service_response = requests.post('http://mocked.service:9999/test')
+        self.assertEquals(mocked_service_response.status_code, httplib.NOT_FOUND)
+
+        logging.info('Use WiremockController to stub the service `test` endpoint')
+        stubs_dir_path = os.path.join(os.path.dirname(__file__), '..', 'resources', 'wiremock_stubs')
+        dtt.WiremockController(url=self.MOCKED_SERVICE_URL).set_mapping_from_dir(stubs_dir_path)
+
+        logging.info('Validating mocked service response on `test` endpoint')
+        mocked_service_response = requests.post('http://mocked.service:9999/test')
+        self.assertEquals(mocked_service_response.status_code, httplib.OK)
+
 ```
 
 ## Integrating With `nose2`
@@ -97,13 +127,18 @@ $ CONFIG=test.cfg nose2 --config=test.cfg --verbose --project-directory .
 ```
 Outcome:
 ```
-test_example (tests.example.test_example.ExampleTest)
-Validate the docker-test-tools package. ... ok
+test_mocked_service_configuration (tests.nose2_example.test_example.ExampleTest)
+Validate wiremock service. ... ok
+test_service_down (tests.nose2_example.test_example.ExampleTest)
+Validate service down scenario. ... ok
+test_services_sanity (tests.nose2_example.test_example.ExampleTest)
+Validate services are responsive once the test context start. ... ok
 
 ----------------------------------------------------------------------
-Ran 1 test in 9.535s
+Ran 3 tests in 17.006s
 
 OK
+
 ```
 
 ## Integrating With `pytest`
@@ -141,14 +176,12 @@ $ CONFIG=tests/pytest_example/test.cfg pytest tests/pytest_example/
 
 Outcome:
 ```
-===== ... ==== test session starts ==== ... ====
+==== ... ==== test session starts ==== ... ====
 platform linux2 -- Python 2.7.5, pytest-3.0.6, py-1.4.32, pluggy-0.4.0
-...
-collected 1 items 
+rootdir: /home/sarbov/work/docker-test-tools, inifile: 
+collected 3 items 
 
-tests/pytest_example/test_example.py .
+tests/pytest_example/test_example.py ...
 
-===== ... ==== 1 passed in 9.78 seconds ==== ... ====
-
-
+==== ... ==== 3 passed in 16.89 seconds ==== ... ====
 ```

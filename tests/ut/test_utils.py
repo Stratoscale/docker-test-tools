@@ -9,7 +9,7 @@ class TestUtils(unittest.TestCase):
 
     @mock.patch('subprocess.call')
     def test_run_health_checks(self, call_mock):
-        """Validate the are_services_ready method."""
+        """Validate the run_health_checks function."""
         call_mock.return_value = 0
         utils.run_health_checks([utils.get_curl_health_check('service1', 'first_url'),
                                  utils.get_curl_health_check('service2', 'second_url')])
