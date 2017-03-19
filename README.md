@@ -17,7 +17,7 @@ The `docker-test-tools` package makes it easy to write tests that relies on dock
 
 For example: `docker-compose.yml`
 ```yml
-version: '2'
+version: '2.1'
 
 networks:
   tests-network:
@@ -28,11 +28,19 @@ services:
   consul.service:
     image: consul
     networks: [tests-network]
+    healthcheck:
+      test: "curl -f http://localhost:8500 || exit 1"
+      interval: 1s
+      retries: 120
 
   mocked.service:
-    image: rackattack-nas.dc1:5000/wiremock:e069b8c8ba964a72daf08ad9c01c9147571dc2b5
+    image: rackattack-nas.dc1:5000/wiremock:7921b9c1916a2d2bc8bd929cd7e074b8eec38ac8
     networks: [tests-network]
     command: "9999"
+    healthcheck:
+      test: "curl -f http://localhost:9999/__admin || exit 1"
+      interval: 1s
+      retries: 120
 ```
 
 ### Define the Environment Configuration File
@@ -64,58 +72,48 @@ import httplib
 import logging
 import requests
 
-import docker_test_tools as dtt
+from docker_test_tools.base_test import BaseDockerTest
+from docker_test_tools.wiremock import WiremockController
 
 
-class ExampleTest(dtt.BaseDockerTest):
+class ExampleTest(BaseDockerTest):
     """Usage example test for docker-test-tools."""
+    # Services names as they appear in the docker-compose.yml
     CONSUL_SERVICE_NAME = 'consul.service'
     MOCKED_SERVICE_NAME = 'mocked.service'
 
-    CONSUL_URL = 'http://consul.service:8500'
-    MOCKED_SERVICE_URL = 'http://mocked.service:9999'
-
-    # Define the required services health checks to pass up before the test starts running
-    REQUIRED_HEALTH_CHECKS = [
-        dtt.get_curl_health_check(service_name=CONSUL_SERVICE_NAME, url=CONSUL_URL),
-        dtt.get_curl_health_check(service_name=MOCKED_SERVICE_NAME, url=MOCKED_SERVICE_URL)
-    ]
-
     def test_services_sanity(self):
-        """Validate services are responsive once the test context start."""
+        """Validate services are responsive once the test start."""
         logging.info('Validating consul container is responsive')
-        consul_response = requests.get(self.CONSUL_URL)
-        self.assertEquals(consul_response.status_code, httplib.OK)
+        self.assertEquals(requests.get('http://consul.service:8500').status_code, httplib.OK)
+
+        logging.info('Validating wiremock container is responsive')
+        self.assertEquals(requests.get('http://mocked.service:9999/__admin').status_code, httplib.OK)
 
     def test_service_down(self):
         """Validate service down scenario."""
         logging.info('Validating consul container is responsive')
-        consul_response = requests.get(self.CONSUL_URL)
-        self.assertEquals(consul_response.status_code, httplib.OK)
+        self.assertEquals(requests.get('http://consul.service:8500').status_code, httplib.OK)
 
         logging.info('Validating consul container is unresponsive while in `container_down` context')
-        consul_health_check = dtt.get_curl_health_check(service_name=self.CONSUL_SERVICE_NAME, url=self.CONSUL_URL)
-        with self.controller.container_down(name=self.CONSUL_SERVICE_NAME, health_check=consul_health_check):
+        with self.controller.container_down(name=self.CONSUL_SERVICE_NAME):
             with self.assertRaises(requests.ConnectionError):
-                requests.get(self.CONSUL_URL)
+                requests.get('http://consul.service:8500')
 
         logging.info('Validating consul container has recovered and is responsive')
-        consul_response = requests.get(self.CONSUL_URL)
-        self.assertEquals(consul_response.status_code, httplib.OK)
+        self.assertEquals(requests.get('http://consul.service:8500').status_code, httplib.OK)
 
     def test_mocked_service_configuration(self):
         """Validate wiremock service."""
         logging.info('Validating mocked service fail to find `test` endpoint')
-        mocked_service_response = requests.post('http://mocked.service:9999/test')
-        self.assertEquals(mocked_service_response.status_code, httplib.NOT_FOUND)
+        self.assertEquals(requests.post('http://mocked.service:9999/test').status_code, httplib.NOT_FOUND)
 
         logging.info('Use WiremockController to stub the service `test` endpoint')
         stubs_dir_path = os.path.join(os.path.dirname(__file__), '..', 'resources', 'wiremock_stubs')
-        dtt.WiremockController(url=self.MOCKED_SERVICE_URL).set_mapping_from_dir(stubs_dir_path)
+        WiremockController(url='http://mocked.service:9999').set_mapping_from_dir(stubs_dir_path)
 
         logging.info('Validating mocked service response on `test` endpoint')
-        mocked_service_response = requests.post('http://mocked.service:9999/test')
-        self.assertEquals(mocked_service_response.status_code, httplib.OK)
+        self.assertEquals(requests.post('http://mocked.service:9999/test').status_code, httplib.OK)
 
 ```
 
@@ -132,13 +130,12 @@ Validate wiremock service. ... ok
 test_service_down (tests.nose2_example.test_example.ExampleTest)
 Validate service down scenario. ... ok
 test_services_sanity (tests.nose2_example.test_example.ExampleTest)
-Validate services are responsive once the test context start. ... ok
+Validate services are responsive once the test start. ... ok
 
 ----------------------------------------------------------------------
-Ran 3 tests in 17.006s
+Ran 3 tests in 26.082s
 
 OK
-
 ```
 
 ## Integrating With `pytest`
@@ -178,10 +175,10 @@ Outcome:
 ```
 ==== ... ==== test session starts ==== ... ====
 platform linux2 -- Python 2.7.5, pytest-3.0.6, py-1.4.32, pluggy-0.4.0
-rootdir: /home/sarbov/work/docker-test-tools, inifile: 
+rootdir: /docker-test-tools, inifile: 
 collected 3 items 
 
 tests/pytest_example/test_example.py ...
 
-==== ... ==== 3 passed in 16.89 seconds ==== ... ====
+==== ... ==== 3 passed in 28.41 seconds ==== ... ====
 ```

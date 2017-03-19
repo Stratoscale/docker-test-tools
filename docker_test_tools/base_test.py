@@ -2,7 +2,6 @@ import os
 import unittest
 
 import layer
-import utils
 import config
 import environment
 
@@ -14,9 +13,8 @@ class BaseDockerTest(unittest.TestCase):
 
     When subclassing, you can set these attributes:
 
-    * REQUIRED_HEALTH_CHECKS: Define the required services health checks to pass up before the test starts running.
-    * HEALTH_CHECKS_TIMEOUT: Define the timeout (in seconds) for the required services start up.
-    * HEALTH_CHECKS_INTERVAL: Define the interval (in seconds) for sampling required services health checks.
+    * CHECKS_TIMEOUT: Define the timeout (in seconds) for the required services start up.
+    * CHECKS_INTERVAL: Define the interval (in seconds) for sampling required services checks.
 
     """
     config = config.Config(config_path=os.environ.get('CONFIG', None))
@@ -28,19 +26,12 @@ class BaseDockerTest(unittest.TestCase):
     # Define the common methods for the subsystem tests (global setUp and tearDown, and testSetUp).
     layer = layer.get_layer(controller=controller)
 
-    # Override this value to define the health checks (callables) to pass up before the test starts running.
-    REQUIRED_HEALTH_CHECKS = []
+    # Override this value to define the timeout (in seconds) for the required checks to pass.
+    CHECKS_TIMEOUT = 60
 
-    # Override this value to define the timeout (in seconds) for the required health checks to pass.
-    HEALTH_CHECKS_TIMEOUT = 60
-
-    # Override this value to define the interval (in seconds) for sampling required health checks to pass.
-    HEALTH_CHECKS_INTERVAL = 1
+    # Override this value to define the interval (in seconds) for sampling required checks to pass.
+    CHECKS_INTERVAL = 1
 
     def setUp(self):
-        self.assertTrue(
-            utils.run_health_checks(checks=self.REQUIRED_HEALTH_CHECKS,
-                                    timeout=self.HEALTH_CHECKS_TIMEOUT,
-                                    interval=self.HEALTH_CHECKS_INTERVAL),
-            "Required health checks didn't pass within timeout"
-        )
+        self.assertTrue(self.controller.wait_for_services(interval=self.CHECKS_INTERVAL, timeout=self.CHECKS_TIMEOUT),
+                        "Required checks didn't pass within timeout")

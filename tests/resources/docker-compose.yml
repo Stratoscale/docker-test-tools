@@ -1,4 +1,4 @@
-version: '2'
+version: '2.1'
 
 networks:
   tests-network:
@@ -9,8 +9,16 @@ services:
   consul.service:
     image: consul
     networks: [tests-network]
+    healthcheck:
+      test: "curl -f http://localhost:8500 || false"
+      interval: 1s
+      retries: 120
 
   mocked.service:
-    image: rackattack-nas.dc1:5000/wiremock:e069b8c8ba964a72daf08ad9c01c9147571dc2b5
+    image: rackattack-nas.dc1:5000/wiremock:7921b9c1916a2d2bc8bd929cd7e074b8eec38ac8
     networks: [tests-network]
     command: "9999"
+    healthcheck:
+      test: "curl -f http://localhost:9999/__admin || false"
+      interval: 1s
+      retries: 120
