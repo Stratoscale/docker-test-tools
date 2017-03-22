@@ -29,7 +29,7 @@ services:
     image: consul
     networks: [tests-network]
     healthcheck:
-      test: "curl -f http://localhost:8500 || exit 1"
+      test: "curl -f http://localhost:8500 || false"
       interval: 1s
       retries: 120
 
@@ -38,7 +38,7 @@ services:
     networks: [tests-network]
     command: "9999"
     healthcheck:
-      test: "curl -f http://localhost:9999/__admin || exit 1"
+      test: "curl -f http://localhost:9999/__admin || false"
       interval: 1s
       retries: 120
 ```

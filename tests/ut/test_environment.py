@@ -85,25 +85,21 @@ services:
 
         mock_get_id = mock.MagicMock(return_value='test-id')
         with mock.patch("docker_test_tools.environment.EnvironmentController.get_container_id", mock_get_id):
-            mocked_check_output.return_value = '{"Status":"healthy"}'
-            self.assertTrue(self.controller.is_container_healthy('test'))
-            mocked_check_output.assert_called_with(r"docker inspect --format='{{json .State.Health}}' test-id",
-                                                   shell=True)
+            mocked_check_output.return_value = '{"Health": {"Status":"healthy"}}'
+            self.assertTrue(self.controller.is_container_ready('test'))
+            mocked_check_output.assert_called_with(r"docker inspect --format='{{json .State}}' test-id", shell=True)
 
-            mocked_check_output.return_value = '{"Status":"not-healthy"}'
-            self.assertFalse(self.controller.is_container_healthy('test'))
-            mocked_check_output.assert_called_with(r"docker inspect --format='{{json .State.Health}}' test-id",
-                                                   shell=True)
+            mocked_check_output.return_value = '{"Health": {"Status":"unhealthy"}}'
+            self.assertFalse(self.controller.is_container_ready('test'))
+            mocked_check_output.assert_called_with(r"docker inspect --format='{{json .State}}' test-id", shell=True)
 
             mocked_check_output.return_value = '{"Status":"running"}'
             self.assertTrue(self.controller.is_container_ready('test'))
-            mocked_check_output.assert_called_with(r"docker inspect --format='{{json .State.Status}}' test-id",
-                                                   shell=True)
+            mocked_check_output.assert_called_with(r"docker inspect --format='{{json .State}}' test-id", shell=True)
 
             mocked_check_output.return_value = '{"Status":"not-running"}'
             self.assertFalse(self.controller.is_container_ready('test'))
-            mocked_check_output.assert_called_with(r"docker inspect --format='{{json .State.Status}}' test-id",
-                                                   shell=True)
+            mocked_check_output.assert_called_with(r"docker inspect --format='{{json .State}}' test-id", shell=True)
 
     @mock.patch('subprocess.check_output', mock.MagicMock(side_effect=subprocess.CalledProcessError(1, '', '')))
     @mock.patch('docker_test_tools.environment.EnvironmentController.validate_service_name', mock.MagicMock())
@@ -133,7 +129,6 @@ services:
         mock_get_id = mock.MagicMock(return_value='test-id')
         with mock.patch("docker_test_tools.environment.EnvironmentController.get_container_id", mock_get_id):
             self.assertFalse(self.controller.is_container_ready('test'))
-            self.assertFalse(self.controller.is_container_healthy('test'))
 
     def test_container_methods_bad_service_name(self):
         """Validate environment controller methods fail in case of invalid service name."""
@@ -150,13 +145,10 @@ services:
         with self.assertRaises(ValueError):
             self.assertTrue(self.controller.is_container_ready(service_name))
 
-        with self.assertRaises(ValueError):
-            self.assertTrue(self.controller.is_container_healthy(service_name))
-
     @mock.patch('docker_test_tools.environment.EnvironmentController.validate_service_name', mock.MagicMock())
     @mock.patch("docker_test_tools.environment.EnvironmentController.is_container_ready")
     @mock.patch("subprocess.check_output")
-    def test_container_down_no_health_check(self, mocked_check_output, mock_is_ready):
+    def test_container_down(self, mocked_check_output, mock_is_ready):
         """Validate container_down context manager - without health check."""
         controller = self.get_controller()
 
@@ -170,26 +162,6 @@ services:
         mock_is_ready.assert_called_with('service1')
         mocked_check_output.assert_called_with(
             ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'restart', 'service1'],
-            stderr=subprocess.STDOUT
-        )
-
-    @mock.patch('docker_test_tools.environment.EnvironmentController.validate_service_name', mock.MagicMock())
-    @mock.patch("docker_test_tools.environment.EnvironmentController.is_container_healthy")
-    @mock.patch("subprocess.check_output")
-    def test_container_down_with_health_check(self, mocked_check_output, mock_is_healthy):
-        """Validate container_down context manager - with health check."""
-        controller = self.get_controller()
-
-        mock_is_healthy.return_value = True
-        with controller.container_down('service2'):
-            mocked_check_output.assert_called_with(
-                ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'kill', 'service2'],
-                stderr=subprocess.STDOUT
-            )
-
-        mock_is_healthy.assert_called_with('service2')
-        mocked_check_output.assert_called_with(
-            ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'restart', 'service2'],
             stderr=subprocess.STDOUT
         )
 
@@ -262,12 +234,7 @@ services:
     def get_controller(self):
         """Returns a new EnvironmentController."""
 
-        # Define mock target name for 'open'
-        open_name = '%s.open' % environment.__name__
-
-        # Mock open & file object to return a valid docker-compose yaml when read
-        m = mock.mock_open(read_data=self.COMPOSE_CONTENT)
-        with mock.patch(open_name, m, create=True):
+        with mock.patch("subprocess.check_output", return_value="service1\nservice2\n"):
             return environment.EnvironmentController(log_path=self.log_path,
                                                      compose_path=self.compose_path,
                                                      project_name=self.project_name)

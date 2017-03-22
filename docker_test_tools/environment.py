@@ -16,24 +16,24 @@ class EnvironmentController(object):
         self.compose_path = compose_path
         self.reuse_containers = reuse_containers
 
-        self.services = self.get_services(compose_path)
+        self.services = self.get_services()
 
-    def get_services(self, compose_path):
+    def get_services(self):
         """Get the services info based on the compose file.
 
         :return dict: of format {'service-name': check_callback}
         """
-        with open(compose_path, 'r') as compose_file:
-            compose_data = yaml.load(compose_file)
+        logging.debug("Getting environment services, using docker compose: %s", self.compose_path)
+        try:
+            services_output = subprocess.check_output(
+                ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'config', '--services'],
+                stderr=subprocess.STDOUT
+            )
 
-        services = {}
-        for service_name, configuration in compose_data.get('services', {}).iteritems():
-            if 'healthcheck' in configuration:
-                services[service_name] = self.is_container_healthy
-            else:
-                services[service_name] = self.is_container_ready
+        except subprocess.CalledProcessError as error:
+            raise RuntimeError("Failed getting environment services, reason: %s" % error.output)
 
-        return services
+        return services_output.strip().split('\n')
 
     def setup(self):
         """Sets up the environment using docker commands.
@@ -165,44 +165,29 @@ class EnvironmentController(object):
     def is_container_ready(self, name):
         """"Return True if the container is in ready state.
 
+        If a health check is defined, a healthy container will be considered as ready.
+        If no health check is defined, a running container will be considered as ready.
+
         :param str name: container name as it appears in the docker compose file.
         """
         self.validate_service_name(name)
         logging.debug("Getting %s container state", name)
         container_id = self.get_container_id(name)
         try:
-            output = subprocess.check_output(r"docker inspect --format='{{json .State.Status}}' " + container_id,
+            status_output = subprocess.check_output(r"docker inspect --format='{{json .State}}' " + container_id,
                                              shell=True)
 
         except subprocess.CalledProcessError as error:
             logging.warning("Failed getting container %s state, reason: %s", name, error.output)
             return False
 
-        health_json = json.loads(output)
-        is_ready = health_json["Status"] == "running"
+        if '"Health":' in status_output:
+            is_ready = '"Status":"healthy"' in status_output
+        else:
+            is_ready = '"Status":"running"' in status_output
+
         logging.debug("Container %s ready: %s", name, is_ready)
         return is_ready
-
-    def is_container_healthy(self, name):
-        """"Return True if the container health check passed.
-
-        :param str name: container name as it appears in the docker compose file.
-        """
-        self.validate_service_name(name)
-        logging.debug("Getting %s container health", name)
-        container_id = self.get_container_id(name)
-        try:
-            output = subprocess.check_output(r"docker inspect --format='{{json .State.Health}}' " + container_id,
-                                             shell=True)
-
-        except subprocess.CalledProcessError as error:
-            logging.warning("Failed getting container %s health, reason: %s", name, error.output)
-            return False
-
-        health_json = json.loads(output)
-        is_healthy = health_json["Status"] == "healthy"
-        logging.debug("Container %s healthy: %s", name, is_healthy)
-        return is_healthy
 
     def wait_for_services(self, services=None, interval=1, timeout=60):
         """Wait for the services checks to pass.
@@ -210,12 +195,12 @@ class EnvironmentController(object):
         If the service compose configuration contains an health check, the method will wait for a 'healthy' state.
         If it doesn't the method will wait for a 'running' state.
         """
-        services = services if services else self.services.keys()
+        services = services if services else self.services
         logging.info('Waiting for %s to reach the required state', services)
 
         def service_checks():
             """Return True if services checks pass."""
-            return all([self.services[name](name) for name in services])
+            return all([self.is_container_ready(name) for name in services])
 
         try:
             waiting.wait(service_checks, sleep_seconds=interval, timeout_seconds=timeout)
@@ -254,4 +239,4 @@ class EnvironmentController(object):
 
     def validate_service_name(self, name):
         if name not in self.services:
-            raise ValueError('Invalid service name: %r, must be one of %s' % (name, self.services.keys()))
+            raise ValueError('Invalid service name: %r, must be one of %s' % (name, self.services))
