@@ -1,6 +1,6 @@
 import logging
 import subprocess
-
+import os.path
 from contextlib import contextmanager
 
 import utils
@@ -75,17 +75,37 @@ class EnvironmentController(object):
         except subprocess.CalledProcessError as error:
             raise RuntimeError("Failed killing environment containers, reason: \n%s", error.output)
 
-    def get_containers_logs(self):
-        """Write the environment containers logs into a file."""
-        logging.info("Writing containers logs to %s, using docker compose: %s", self.log_path, self.compose_path)
+    def get_service_list(self):
+        try:
+            text = subprocess.check_output('docker-compose -f {compose_path} config --services'.format(compose_path=self.compose_path),
+                                           shell=True, stderr=subprocess.STDOUT)
+
+        except subprocess.CalledProcessError as error:
+            raise RuntimeError("Failed getting list of services, reason: \n%s", error.output)
+        return text.strip().split('\n')
+
+    def _get_container_logs(self, service_name=None):
+        """Write the logs of a service container (or all of them) to files."""
+        if service_name:
+            log_dir, _ = os.path.split(self.log_path)
+            log_path = os.path.join(log_dir, '{}.log'.format(service_name))
+        else:
+            log_path = self.log_path
+        logging.info("Writing containers logs to %s, using docker compose: %s", log_path, self.compose_path)
         try:
             subprocess.check_output(
-                'docker-compose -f {compose_path} -p {project_name} logs --no-color > {log_path}'.format(
-                    compose_path=self.compose_path, project_name=self.project_name,log_path=self.log_path),
+                'docker-compose -f {compose_path} -p {project_name} logs --no-color {service_name} > {log_path}'.format(
+                    compose_path=self.compose_path, project_name=self.project_name, log_path=log_path,
+                    service_name=service_name or ''),
                 shell=True, stderr=subprocess.STDOUT
             )
         except subprocess.CalledProcessError as error:
             raise RuntimeError("Failed writing environment containers log, reason: \n%s", error.output)
+
+    def get_containers_logs(self):
+        self._get_container_logs()
+        for service_name in self.get_service_list() + [None]:
+            self._get_container_logs(service_name)
 
     def remove_containers(self):
         """Remove the environment containers."""
