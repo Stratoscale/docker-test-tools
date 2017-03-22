@@ -58,9 +58,9 @@ class TestEnvironmentController(unittest.TestCase):
             )
 
             self.controller.get_containers_logs()
-            mocked_check_output.assert_called_with(
-                'docker-compose -f {compose_path} -p {project_name} logs --no-color > {log_path}'.format(
-                    compose_path=self.compose_path, project_name=self.project_name,log_path=self.log_path),
+            mocked_check_output.assert_any_call(
+                'docker-compose -f {compose_path} -p {project_name} logs --no-color  > {log_path}'.format(
+                    compose_path=self.compose_path, project_name=self.project_name, log_path=self.log_path),
                 shell=True, stderr=subprocess.STDOUT
             )
 
