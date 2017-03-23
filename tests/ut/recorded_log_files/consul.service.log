@@ -1,0 +1,37 @@
+Attaching to example_consul.service_1
+consul.service_1  | ==> Starting Consul agent...
+consul.service_1  | ==> Starting Consul agent RPC...
+consul.service_1  | ==> Consul agent running!
+consul.service_1  |            Version: 'v0.7.1'
+consul.service_1  |          Node name: 'ce704b2cd277'
+consul.service_1  |         Datacenter: 'dc1'
+consul.service_1  |             Server: true (bootstrap: false)
+consul.service_1  |        Client Addr: 0.0.0.0 (HTTP: 8500, HTTPS: -1, DNS: 8600, RPC: 8400)
+consul.service_1  |       Cluster Addr: 127.0.0.1 (LAN: 8301, WAN: 8302)
+consul.service_1  |     Gossip encrypt: false, RPC-TLS: false, TLS-Incoming: false
+consul.service_1  |              Atlas: <disabled>
+consul.service_1  | ==> Log data will now stream in as it occurs:
+consul.service_1  |     2017/03/23 14:49:48 [INFO] raft: Initial configuration (index=1): [{Suffrage:Voter ID:127.0.0.1:8300 Address:127.0.0.1:8300}]
+consul.service_1  |     2017/03/23 14:49:48 [INFO] raft: Node at 127.0.0.1:8300 [Follower] entering Follower state (Leader: "")
+consul.service_1  |     2017/03/23 14:49:48 [INFO] serf: EventMemberJoin: ce704b2cd277 127.0.0.1
+consul.service_1  |     2017/03/23 14:49:48 [INFO] consul: Adding LAN server ce704b2cd277 (Addr: tcp/127.0.0.1:8300) (DC: dc1)
+consul.service_1  |     2017/03/23 14:49:48 [INFO] serf: EventMemberJoin: ce704b2cd277.dc1 127.0.0.1
+consul.service_1  |     2017/03/23 14:49:48 [INFO] consul: Adding WAN server ce704b2cd277.dc1 (Addr: tcp/127.0.0.1:8300) (DC: dc1)
+consul.service_1  | ==> Starting Consul agent...
+consul.service_1  | ==> Starting Consul agent RPC...
+consul.service_1  | ==> Consul agent running!
+consul.service_1  |            Version: 'v0.7.1'
+consul.service_1  |          Node name: 'ce704b2cd277'
+consul.service_1  |         Datacenter: 'dc1'
+consul.service_1  |             Server: true (bootstrap: false)
+consul.service_1  |        Client Addr: 0.0.0.0 (HTTP: 8500, HTTPS: -1, DNS: 8600, RPC: 8400)
+consul.service_1  |       Cluster Addr: 127.0.0.1 (LAN: 8301, WAN: 8302)
+consul.service_1  |     Gossip encrypt: false, RPC-TLS: false, TLS-Incoming: false
+consul.service_1  |              Atlas: <disabled>
+consul.service_1  | ==> Log data will now stream in as it occurs:
+consul.service_1  |     2017/03/23 14:49:53 [INFO] raft: Initial configuration (index=1): [{Suffrage:Voter ID:127.0.0.1:8300 Address:127.0.0.1:8300}]
+consul.service_1  |     2017/03/23 14:49:53 [INFO] raft: Node at 127.0.0.1:8300 [Follower] entering Follower state (Leader: "")
+consul.service_1  |     2017/03/23 14:49:53 [INFO] serf: EventMemberJoin: ce704b2cd277 127.0.0.1
+consul.service_1  |     2017/03/23 14:49:53 [INFO] consul: Adding LAN server ce704b2cd277 (Addr: tcp/127.0.0.1:8300) (DC: dc1)
+consul.service_1  |     2017/03/23 14:49:53 [INFO] serf: EventMemberJoin: ce704b2cd277.dc1 127.0.0.1
+consul.service_1  |     2017/03/23 14:49:53 [INFO] consul: Adding WAN server ce704b2cd277.dc1 (Addr: tcp/127.0.0.1:8300) (DC: dc1)

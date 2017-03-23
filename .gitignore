@@ -49,7 +49,6 @@ reports/
 *.pot
 
 # Django stuff:
-*.log
 local_settings.py
 
 # Flask stuff:

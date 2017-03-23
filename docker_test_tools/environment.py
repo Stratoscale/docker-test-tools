@@ -84,7 +84,7 @@ class EnvironmentController(object):
             raise RuntimeError("Failed getting list of services, reason: \n%s", error.output)
         return text.strip().split('\n')
 
-    def _service_log_file_name(self, service_name=None):
+    def _get_service_log_file_name(self, service_name=None):
         if not service_name:
             return self.log_path
         log_dir, _ = os.path.split(self.log_path)
@@ -92,7 +92,7 @@ class EnvironmentController(object):
 
     def _get_container_logs(self, service_name=None):
         """Write the logs of a service container (or all of them) to files."""
-        log_path = self._service_log_file_name(service_name)
+        log_path = self._get_service_log_file_name(service_name)
         logging.info("Writing containers logs to %s, using docker compose: %s", log_path, self.compose_path)
         try:
             subprocess.check_output(
@@ -109,7 +109,7 @@ class EnvironmentController(object):
         for service_name in service_names:
             if not service_name:
                 continue
-            log_path = self._service_log_file_name(service_name)
+            log_path = self._get_service_log_file_name(service_name)
             found = False
             wiremock_initiated = False
             for line in open(log_path):

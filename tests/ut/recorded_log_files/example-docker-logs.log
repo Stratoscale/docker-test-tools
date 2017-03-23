@@ -1,0 +1,211 @@
+Attaching to example_mocked.service_1, example_consul.service_1
+consul.service_1  | ==> Starting Consul agent...
+consul.service_1  | ==> Starting Consul agent RPC...
+consul.service_1  | ==> Consul agent running!
+consul.service_1  |            Version: 'v0.7.1'
+consul.service_1  |          Node name: 'ce704b2cd277'
+consul.service_1  |         Datacenter: 'dc1'
+consul.service_1  |             Server: true (bootstrap: false)
+consul.service_1  |        Client Addr: 0.0.0.0 (HTTP: 8500, HTTPS: -1, DNS: 8600, RPC: 8400)
+consul.service_1  |       Cluster Addr: 127.0.0.1 (LAN: 8301, WAN: 8302)
+consul.service_1  |     Gossip encrypt: false, RPC-TLS: false, TLS-Incoming: false
+consul.service_1  |              Atlas: <disabled>
+consul.service_1  | ==> Log data will now stream in as it occurs:
+consul.service_1  |     2017/03/23 14:49:48 [INFO] raft: Initial configuration (index=1): [{Suffrage:Voter ID:127.0.0.1:8300 Address:127.0.0.1:8300}]
+consul.service_1  |     2017/03/23 14:49:48 [INFO] raft: Node at 127.0.0.1:8300 [Follower] entering Follower state (Leader: "")
+consul.service_1  |     2017/03/23 14:49:48 [INFO] serf: EventMemberJoin: ce704b2cd277 127.0.0.1
+consul.service_1  |     2017/03/23 14:49:48 [INFO] consul: Adding LAN server ce704b2cd277 (Addr: tcp/127.0.0.1:8300) (DC: dc1)
+consul.service_1  |     2017/03/23 14:49:48 [INFO] serf: EventMemberJoin: ce704b2cd277.dc1 127.0.0.1
+consul.service_1  |     2017/03/23 14:49:48 [INFO] consul: Adding WAN server ce704b2cd277.dc1 (Addr: tcp/127.0.0.1:8300) (DC: dc1)
+consul.service_1  | ==> Starting Consul agent...
+consul.service_1  | ==> Starting Consul agent RPC...
+consul.service_1  | ==> Consul agent running!
+consul.service_1  |            Version: 'v0.7.1'
+consul.service_1  |          Node name: 'ce704b2cd277'
+consul.service_1  |         Datacenter: 'dc1'
+consul.service_1  |             Server: true (bootstrap: false)
+consul.service_1  |        Client Addr: 0.0.0.0 (HTTP: 8500, HTTPS: -1, DNS: 8600, RPC: 8400)
+consul.service_1  |       Cluster Addr: 127.0.0.1 (LAN: 8301, WAN: 8302)
+consul.service_1  |     Gossip encrypt: false, RPC-TLS: false, TLS-Incoming: false
+consul.service_1  |              Atlas: <disabled>
+consul.service_1  | ==> Log data will now stream in as it occurs:
+consul.service_1  |     2017/03/23 14:49:53 [INFO] raft: Initial configuration (index=1): [{Suffrage:Voter ID:127.0.0.1:8300 Address:127.0.0.1:8300}]
+consul.service_1  |     2017/03/23 14:49:53 [INFO] raft: Node at 127.0.0.1:8300 [Follower] entering Follower state (Leader: "")
+consul.service_1  |     2017/03/23 14:49:53 [INFO] serf: EventMemberJoin: ce704b2cd277 127.0.0.1
+consul.service_1  |     2017/03/23 14:49:53 [INFO] consul: Adding LAN server ce704b2cd277 (Addr: tcp/127.0.0.1:8300) (DC: dc1)
+consul.service_1  |     2017/03/23 14:49:53 [INFO] serf: EventMemberJoin: ce704b2cd277.dc1 127.0.0.1
+consul.service_1  |     2017/03/23 14:49:53 [INFO] consul: Adding WAN server ce704b2cd277.dc1 (Addr: tcp/127.0.0.1:8300) (DC: dc1)
+consul.service_1  |     2017/03/23 14:50:00 [ERR] agent: failed to sync remote state: No cluster leader
+consul.service_1  |     2017/03/23 14:50:01 [WARN] raft: Heartbeat timeout from "" reached, starting election
+consul.service_1  |     2017/03/23 14:50:01 [INFO] raft: Node at 127.0.0.1:8300 [Candidate] entering Candidate state in term 2
+consul.service_1  |     2017/03/23 14:50:01 [DEBUG] raft: Votes needed: 1
+consul.service_1  |     2017/03/23 14:50:01 [DEBUG] raft: Vote granted from 127.0.0.1:8300 in term 2. Tally: 1
+consul.service_1  |     2017/03/23 14:50:01 [INFO] raft: Election won. Tally: 1
+consul.service_1  |     2017/03/23 14:50:01 [INFO] raft: Node at 127.0.0.1:8300 [Leader] entering Leader state
+consul.service_1  |     2017/03/23 14:50:01 [INFO] consul: cluster leadership acquired
+consul.service_1  |     2017/03/23 14:50:01 [INFO] consul: New leader elected: ce704b2cd277
+consul.service_1  |     2017/03/23 14:50:01 [DEBUG] consul: reset tombstone GC to index 3
+consul.service_1  |     2017/03/23 14:50:01 [INFO] consul: member 'ce704b2cd277' joined, marking health alive
+consul.service_1  |     2017/03/23 14:50:01 [INFO] agent: Synced service 'consul'
+consul.service_1  |     2017/03/23 14:50:01 [DEBUG] agent: Node info in sync
+mocked.service_1  | 2017-03-23 14:49:48.285 Verbose logging enabled
+mocked.service_1  | SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+mocked.service_1  | SLF4J: Defaulting to no-operation (NOP) logger implementation
+mocked.service_1  | SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
+mocked.service_1  | 2017-03-23 14:49:48.737 Verbose logging enabled
+mocked.service_1  |  /$$      /$$ /$$                     /$$      /$$                     /$$      
+mocked.service_1  | | $$  /$ | $$|__/                    | $$$    /$$$                    | $$      
+mocked.service_1  | | $$ /$$$| $$ /$$  /$$$$$$   /$$$$$$ | $$$$  /$$$$  /$$$$$$   /$$$$$$$| $$   /$$
+mocked.service_1  | | $$/$$ $$ $$| $$ /$$__  $$ /$$__  $$| $$ $$/$$ $$ /$$__  $$ /$$_____/| $$  /$$/
+mocked.service_1  | | $$$$_  $$$$| $$| $$  \__/| $$$$$$$$| $$  $$$| $$| $$  \ $$| $$      | $$$$$$/ 
+mocked.service_1  | | $$$/ \  $$$| $$| $$      | $$_____/| $$\  $ | $$| $$  | $$| $$      | $$_  $$ 
+mocked.service_1  | | $$/   \  $$| $$| $$      |  $$$$$$$| $$ \/  | $$|  $$$$$$/|  $$$$$$$| $$ \  $$
+mocked.service_1  | |__/     \__/|__/|__/       \_______/|__/     |__/ \______/  \_______/|__/  \__/
+mocked.service_1  | port:                         9999
+mocked.service_1  | enable-browser-proxying:      false
+mocked.service_1  | no-request-journal:           false
+mocked.service_1  | verbose:                      true
+mocked.service_1  | 2017-03-23 14:49:49.594 Request was not matched:
+mocked.service_1  | {
+mocked.service_1  |   "url" : "/",
+mocked.service_1  |   "absoluteUrl" : "http://mocked.service:9999/",
+mocked.service_1  |   "method" : "GET",
+mocked.service_1  |   "clientIp" : "172.20.0.2",
+mocked.service_1  |   "headers" : {
+mocked.service_1  |     "User-Agent" : "curl/7.29.0",
+mocked.service_1  |     "Accept" : "*/*",
+mocked.service_1  |     "Host" : "mocked.service:9999"
+mocked.service_1  |   },
+mocked.service_1  |   "cookies" : { },
+mocked.service_1  |   "browserProxyRequest" : false,
+mocked.service_1  |   "loggedDate" : 1490280589335,
+mocked.service_1  |   "bodyAsBase64" : "",
+mocked.service_1  |   "body" : "",
+mocked.service_1  |   "loggedDateString" : "2017-03-23T14:49:49Z"
+mocked.service_1  | }
+mocked.service_1  | 2017-03-23 14:49:49.596 Request received:
+mocked.service_1  | 172.20.0.2 - GET /
+mocked.service_1  | User-Agent: [curl/7.29.0]
+mocked.service_1  | Accept: [*/*]
+mocked.service_1  | Host: [mocked.service:9999]
+mocked.service_1  | Matched response definition:
+mocked.service_1  | (no response definition configured)
+mocked.service_1  | Response:
+mocked.service_1  | HTTP/1.1 404
+mocked.service_1  | (no headers)
+mocked.service_1  | 2017-03-23 14:49:49.640 Request was not matched:
+mocked.service_1  | {
+mocked.service_1  |   "url" : "/test",
+mocked.service_1  |   "absoluteUrl" : "http://mocked.service:9999/test",
+mocked.service_1  |   "method" : "POST",
+mocked.service_1  |   "clientIp" : "172.20.0.2",
+mocked.service_1  |   "headers" : {
+mocked.service_1  |     "Connection" : "keep-alive",
+mocked.service_1  |     "User-Agent" : "python-requests/2.11.1",
+mocked.service_1  |     "Host" : "mocked.service:9999",
+mocked.service_1  |     "Accept-Encoding" : "gzip, deflate",
+mocked.service_1  |     "Accept" : "*/*",
+mocked.service_1  |     "Content-Length" : "0"
+mocked.service_1  |   },
+mocked.service_1  |   "cookies" : { },
+mocked.service_1  |   "browserProxyRequest" : false,
+mocked.service_1  |   "loggedDate" : 1490280589631,
+mocked.service_1  |   "bodyAsBase64" : "",
+mocked.service_1  |   "body" : "",
+mocked.service_1  |   "loggedDateString" : "2017-03-23T14:49:49Z"
+mocked.service_1  | }
+mocked.service_1  | 2017-03-23 14:49:49.642 Request received:
+mocked.service_1  | 172.20.0.2 - POST /test
+mocked.service_1  | Connection: [keep-alive]
+mocked.service_1  | User-Agent: [python-requests/2.11.1]
+mocked.service_1  | Host: [mocked.service:9999]
+mocked.service_1  | Accept-Encoding: [gzip, deflate]
+mocked.service_1  | Accept: [*/*]
+mocked.service_1  | Content-Length: [0]
+mocked.service_1  | Matched response definition:
+mocked.service_1  | (no response definition configured)
+mocked.service_1  | Response:
+mocked.service_1  | HTTP/1.1 404
+mocked.service_1  | (no headers)
+mocked.service_1  | 2017-03-23 14:49:49.653 Received request to /mappings with body {"request": {"url": "/test", "method": "POST"}, "response": {"status": 200}}
+mocked.service_1  | 2017-03-23 14:49:49.793 Request received:
+mocked.service_1  | 172.20.0.2 - POST /test
+mocked.service_1  | Connection: [keep-alive]
+mocked.service_1  | User-Agent: [python-requests/2.11.1]
+mocked.service_1  | Host: [mocked.service:9999]
+mocked.service_1  | Accept-Encoding: [gzip, deflate]
+mocked.service_1  | Accept: [*/*]
+mocked.service_1  | Content-Length: [0]
+mocked.service_1  | Matched response definition:
+mocked.service_1  | {
+mocked.service_1  |   "status" : 200
+mocked.service_1  | }
+mocked.service_1  | Response:
+mocked.service_1  | HTTP/1.1 200
+mocked.service_1  | (no headers)
+mocked.service_1  | 2017-03-23 14:49:49.831 Request was not matched:
+mocked.service_1  | {
+mocked.service_1  |   "url" : "/",
+mocked.service_1  |   "absoluteUrl" : "http://mocked.service:9999/",
+mocked.service_1  |   "method" : "GET",
+mocked.service_1  |   "clientIp" : "172.20.0.2",
+mocked.service_1  |   "headers" : {
+mocked.service_1  |     "User-Agent" : "curl/7.29.0",
+mocked.service_1  |     "Accept" : "*/*",
+mocked.service_1  |     "Host" : "mocked.service:9999"
+mocked.service_1  |   },
+mocked.service_1  |   "cookies" : { },
+mocked.service_1  |   "browserProxyRequest" : false,
+mocked.service_1  |   "loggedDate" : 1490280589827,
+mocked.service_1  |   "bodyAsBase64" : "",
+mocked.service_1  |   "body" : "",
+mocked.service_1  |   "loggedDateString" : "2017-03-23T14:49:49Z"
+mocked.service_1  | }
+mocked.service_1  | Closest match:
+mocked.service_1  | {
+mocked.service_1  |   "url" : "/test",
+mocked.service_1  |   "method" : "POST"
+mocked.service_1  | }
+mocked.service_1  | 2017-03-23 14:49:49.832 Request received:
+mocked.service_1  | 172.20.0.2 - GET /
+mocked.service_1  | User-Agent: [curl/7.29.0]
+mocked.service_1  | Accept: [*/*]
+mocked.service_1  | Host: [mocked.service:9999]
+mocked.service_1  | Matched response definition:
+mocked.service_1  | (no response definition configured)
+mocked.service_1  | Response:
+mocked.service_1  | HTTP/1.1 404
+mocked.service_1  | (no headers)
+mocked.service_1  | 2017-03-23 14:49:54.647 Request was not matched:
+mocked.service_1  | {
+mocked.service_1  |   "url" : "/",
+mocked.service_1  |   "absoluteUrl" : "http://mocked.service:9999/",
+mocked.service_1  |   "method" : "GET",
+mocked.service_1  |   "clientIp" : "172.20.0.2",
+mocked.service_1  |   "headers" : {
+mocked.service_1  |     "User-Agent" : "curl/7.29.0",
+mocked.service_1  |     "Accept" : "*/*",
+mocked.service_1  |     "Host" : "mocked.service:9999"
+mocked.service_1  |   },
+mocked.service_1  |   "cookies" : { },
+mocked.service_1  |   "browserProxyRequest" : false,
+mocked.service_1  |   "loggedDate" : 1490280594640,
+mocked.service_1  |   "bodyAsBase64" : "",
+mocked.service_1  |   "body" : "",
+mocked.service_1  |   "loggedDateString" : "2017-03-23T14:49:54Z"
+mocked.service_1  | }
+mocked.service_1  | Closest match:
+mocked.service_1  | {
+mocked.service_1  |   "url" : "/test",
+mocked.service_1  |   "method" : "POST"
+mocked.service_1  | }
+mocked.service_1  | 2017-03-23 14:49:54.648 Request received:
+mocked.service_1  | 172.20.0.2 - GET /
+mocked.service_1  | User-Agent: [curl/7.29.0]
+mocked.service_1  | Accept: [*/*]
+mocked.service_1  | Host: [mocked.service:9999]
+mocked.service_1  | Matched response definition:
+mocked.service_1  | (no response definition configured)
+mocked.service_1  | Response:
+mocked.service_1  | HTTP/1.1 404
+mocked.service_1  | (no headers)
