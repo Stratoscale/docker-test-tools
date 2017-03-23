@@ -1,7 +1,7 @@
-import yaml
-import json
 import logging
 import subprocess
+
+import config
 
 import waiting
 from contextlib import contextmanager
@@ -17,6 +17,18 @@ class EnvironmentController(object):
         self.reuse_containers = reuse_containers
 
         self.services = self.get_services()
+
+    @classmethod
+    def from_file(cls, config_path):
+        """Return an environment controller based on the given config.
+
+        :return EnvironmentController: controller based on the given config
+        """
+        config_object = config.Config(config_path=config_path)
+        return cls(log_path=config_object.log_path,
+                   project_name=config_object.project_name,
+                   compose_path=config_object.docker_compose_path,
+                   reuse_containers=config_object.reuse_containers)
 
     def get_services(self):
         """Get the services info based on the compose file.

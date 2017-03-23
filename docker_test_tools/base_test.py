@@ -3,7 +3,6 @@ import unittest
 
 import layer
 import utils
-import config
 import environment
 
 
@@ -18,11 +17,7 @@ class BaseDockerTest(unittest.TestCase):
     * CHECKS_INTERVAL: Define the interval (in seconds) for sampling required services checks.
 
     """
-    config = config.Config(config_path=os.environ.get('CONFIG', None))
-    controller = environment.EnvironmentController(log_path=config.log_path,
-                                                   project_name=config.project_name,
-                                                   compose_path=config.docker_compose_path,
-                                                   reuse_containers=config.reuse_containers)
+    controller = environment.EnvironmentController.from_file(config_path=os.environ.get('CONFIG', None))
 
     # Define the common methods for the subsystem tests (global setUp and tearDown, and testSetUp).
     layer = layer.get_layer(controller=controller)
@@ -37,13 +32,15 @@ class BaseDockerTest(unittest.TestCase):
     REQUIRED_HEALTH_CHECKS = []
 
     def setUp(self):
+        # Wait for docker inspection on the services to pass
         self.assertTrue(self.controller.wait_for_services(interval=self.CHECKS_INTERVAL, timeout=self.CHECKS_TIMEOUT),
                         "Required checks didn't pass within timeout")
 
         if self.REQUIRED_HEALTH_CHECKS:
+            # Wait for user defined health checks to pass
             self.assertTrue(
                 utils.run_health_checks(checks=self.REQUIRED_HEALTH_CHECKS,
-                                        timeout=self.HEALTH_CHECKS_TIMEOUT,
-                                        interval=self.HEALTH_CHECKS_INTERVAL),
+                                        timeout=self.CHECKS_TIMEOUT,
+                                        interval=self.CHECKS_INTERVAL),
                 "Required health checks didn't pass within timeout"
             )
