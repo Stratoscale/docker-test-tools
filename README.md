@@ -28,6 +28,8 @@ services:
   consul.service:
     image: consul
     networks: [tests-network]
+
+    # [OPTIONAL] healthcheck definition requires docker version > 1.12.
     healthcheck:
       test: "curl -f http://localhost:8500 || false"
       interval: 1s
@@ -37,6 +39,8 @@ services:
     image: rackattack-nas.dc1:5000/wiremock:7921b9c1916a2d2bc8bd929cd7e074b8eec38ac8
     networks: [tests-network]
     command: "9999"
+
+    # [OPTIONAL] healthcheck definition requires docker version > 1.12.
     healthcheck:
       test: "curl -f http://localhost:9999/__admin || false"
       interval: 1s
@@ -74,13 +78,27 @@ import requests
 
 from docker_test_tools.base_test import BaseDockerTest
 from docker_test_tools.wiremock import WiremockController
+from docker_test_tools.utils import get_curl_health_check
 
 
 class ExampleTest(BaseDockerTest):
     """Usage example test for docker-test-tools."""
-    # Services names as they appear in the docker-compose.yml
-    CONSUL_SERVICE_NAME = 'consul.service'
-    MOCKED_SERVICE_NAME = 'mocked.service'
+
+    # [OPTIONAL] User defined health checks, once defined the test setUp will wait for them to pass.
+    REQUIRED_HEALTH_CHECKS = [
+        get_curl_health_check(service_name='consul.service', url='http://consul.service:8500'),
+        get_curl_health_check(service_name='mocked.service', url='http://mocked.service:9999/__admin')
+    ]
+
+    # [OPTIONAL] User defined health checks timeout
+    CHECKS_TIMEOUT = 60
+
+    def setUp(self):
+        """Create a wiremock controller and ad a cleanup for it."""
+        super(ExampleTest, self).setUp()
+
+        self.wiremock = WiremockController(url='http://mocked.service:9999')
+        self.addCleanup(self.wiremock.reset_mapping)
 
     def test_services_sanity(self):
         """Validate services are responsive once the test start."""
@@ -96,7 +114,7 @@ class ExampleTest(BaseDockerTest):
         self.assertEquals(requests.get('http://consul.service:8500').status_code, httplib.OK)
 
         logging.info('Validating consul container is unresponsive while in `container_down` context')
-        with self.controller.container_down(name=self.CONSUL_SERVICE_NAME):
+        with self.controller.container_down(name='consul.service'):
             with self.assertRaises(requests.ConnectionError):
                 requests.get('http://consul.service:8500')
 
@@ -109,8 +127,8 @@ class ExampleTest(BaseDockerTest):
         self.assertEquals(requests.post('http://mocked.service:9999/test').status_code, httplib.NOT_FOUND)
 
         logging.info('Use WiremockController to stub the service `test` endpoint')
-        stubs_dir_path = os.path.join(os.path.dirname(__file__), '..', 'resources', 'wiremock_stubs')
-        WiremockController(url='http://mocked.service:9999').set_mapping_from_dir(stubs_dir_path)
+        stubs_dir_path = os.path.join(os.path.dirname(__file__), '..', 'resources', 'wiremock_stubs')``````
+        self.wiremock.set_mapping_from_dir(stubs_dir_path)
 
         logging.info('Validating mocked service response on `test` endpoint')
         self.assertEquals(requests.post('http://mocked.service:9999/test').status_code, httplib.OK)
@@ -148,18 +166,13 @@ import os
 
 import pytest
 
-from docker_test_tools import config, environment
-
-config = config.Config(config_path=os.environ.get('CONFIG', None))
-controller = environment.EnvironmentController(log_path=config.log_path,
-                                               project_name=config.project_name,
-                                               compose_path=config.docker_compose_path,
-                                               reuse_containers=config.reuse_containers)
+from docker_test_tools import environment
 
 
 @pytest.fixture(scope="session", autouse=True)
 def global_setup_teardown():
     """This function will be executed once per testing session."""
+    controller = environment.EnvironmentController.from_file(config_path=os.environ.get('CONFIG', None))
     controller.setup()
     yield
     controller.teardown()

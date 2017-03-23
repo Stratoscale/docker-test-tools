@@ -15,7 +15,7 @@ class BaseDockerTest(unittest.TestCase):
 
     * CHECKS_TIMEOUT: Define the timeout (in seconds) for the required services start up.
     * CHECKS_INTERVAL: Define the interval (in seconds) for sampling required services checks.
-
+    * REQUIRED_HEALTH_CHECKS: Define the health checks (callables) to pass up before the test starts running.
     """
     controller = environment.EnvironmentController.from_file(config_path=os.environ.get('CONFIG', None))
 
