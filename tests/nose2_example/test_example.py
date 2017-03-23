@@ -9,9 +9,6 @@ from docker_test_tools.wiremock import WiremockController
 
 class ExampleTest(BaseDockerTest):
     """Usage example test for docker-test-tools."""
-    # Services names as they appear in the docker-compose.yml
-    CONSUL_SERVICE_NAME = 'consul.service'
-    MOCKED_SERVICE_NAME = 'mocked.service'
 
     def test_services_sanity(self):
         """Validate services are responsive once the test start."""
@@ -27,7 +24,7 @@ class ExampleTest(BaseDockerTest):
         self.assertEquals(requests.get('http://consul.service:8500').status_code, httplib.OK)
 
         logging.info('Validating consul container is unresponsive while in `container_down` context')
-        with self.controller.container_down(name=self.CONSUL_SERVICE_NAME):
+        with self.controller.container_down(name='consul.service'):
             with self.assertRaises(requests.ConnectionError):
                 requests.get('http://consul.service:8500')
 

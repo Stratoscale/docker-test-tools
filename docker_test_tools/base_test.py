@@ -2,6 +2,7 @@ import os
 import unittest
 
 import layer
+import utils
 import config
 import environment
 
@@ -32,6 +33,17 @@ class BaseDockerTest(unittest.TestCase):
     # Override this value to define the interval (in seconds) for sampling required checks to pass.
     CHECKS_INTERVAL = 1
 
+    # Override this value to define the health checks (callables) to pass up before the test starts running.
+    REQUIRED_HEALTH_CHECKS = []
+
     def setUp(self):
         self.assertTrue(self.controller.wait_for_services(interval=self.CHECKS_INTERVAL, timeout=self.CHECKS_TIMEOUT),
                         "Required checks didn't pass within timeout")
+
+        if self.REQUIRED_HEALTH_CHECKS:
+            self.assertTrue(
+                utils.run_health_checks(checks=self.REQUIRED_HEALTH_CHECKS,
+                                        timeout=self.HEALTH_CHECKS_TIMEOUT,
+                                        interval=self.HEALTH_CHECKS_INTERVAL),
+                "Required health checks didn't pass within timeout"
+            )
