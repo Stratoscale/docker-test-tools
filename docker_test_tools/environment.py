@@ -84,13 +84,15 @@ class EnvironmentController(object):
             raise RuntimeError("Failed getting list of services, reason: \n%s", error.output)
         return text.strip().split('\n')
 
+    def _service_log_file_name(self, service_name=None):
+        if not service_name:
+            return self.log_path
+        log_dir, _ = os.path.split(self.log_path)
+        return os.path.join(log_dir, '{}.log'.format(service_name))
+
     def _get_container_logs(self, service_name=None):
         """Write the logs of a service container (or all of them) to files."""
-        if service_name:
-            log_dir, _ = os.path.split(self.log_path)
-            log_path = os.path.join(log_dir, '{}.log'.format(service_name))
-        else:
-            log_path = self.log_path
+        log_path = self._service_log_file_name(service_name)
         logging.info("Writing containers logs to %s, using docker compose: %s", log_path, self.compose_path)
         try:
             subprocess.check_output(
@@ -102,10 +104,42 @@ class EnvironmentController(object):
         except subprocess.CalledProcessError as error:
             raise RuntimeError("Failed writing environment containers log, reason: \n%s", error.output)
 
+    def _find_unmatched_requests(self, service_names):
+        unmatched_requests = []
+        for service_name in service_names:
+            if not service_name:
+                continue
+            log_path = self._service_log_file_name(service_name)
+            found = False
+            wiremock_initiated = False
+            for line in open(log_path):
+                if 'Received request to /mappings with body' in line:
+                    wiremock_initiated = True
+                if not wiremock_initiated:
+                    continue
+                if 'Request was not matched:' in line:
+                    unmatched_requests.append([service_name, '?', '?'])
+                    found = True
+                if found:
+                    tokens = line.split()
+                    if tokens[2] == '"absoluteUrl"':
+                        unmatched_requests[-1][2] = tokens[4][1:-2]
+                    if tokens[2] == '"method"':
+                        unmatched_requests[-1][1] = tokens[4][1:-2]
+                        found = False
+
+        log_dir, _ = os.path.split(self.log_path)
+        filename = os.path.join(log_dir, 'unmatched_requests')
+        with open(filename, 'w') as out:
+            for request in unmatched_requests:
+                out.write('{}\n'.format('\t'.join(request)))
+
     def get_containers_logs(self):
         self._get_container_logs()
-        for service_name in self._get_service_list() + [None]:
+        service_names = self._get_service_list() + [None]
+        for service_name in service_names:
             self._get_container_logs(service_name)
+        self._find_unmatched_requests(service_names)
 
     def remove_containers(self):
         """Remove the environment containers."""
