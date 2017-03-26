@@ -5,6 +5,8 @@ import subprocess
 
 from docker_test_tools import environment
 
+SERVICE_NAMES = ['consul.service', 'mocked.service']
+
 
 class TestEnvironmentController(unittest.TestCase):
     """Test for the environment controller package."""
@@ -101,14 +103,12 @@ class TestEnvironmentController(unittest.TestCase):
     def test_setup_failure(self, run_mock, remove_mock, kill_mock, tear_down_mock):
         """Validate the environment setup method - failure scenario."""
         run_mock.side_effect = Exception('unexpected-error')
-    
         with self.assertRaises(Exception):
             self.controller.setup()
-    
         kill_mock.assert_called_once_with()
         remove_mock.assert_called_once_with()
         tear_down_mock.assert_called_once_with()
-    
+
     @mock.patch('docker_test_tools.environment.EnvironmentController.kill_containers')
     @mock.patch('docker_test_tools.environment.EnvironmentController.remove_containers')
     @mock.patch('docker_test_tools.environment.EnvironmentController.get_containers_logs')
@@ -147,3 +147,19 @@ class TestEnvironmentController(unittest.TestCase):
         kill_mock.assert_not_called()
         remove_mock.assert_not_called()
         get_log_mock.assert_called_once_with()
+
+    @mock.patch('docker_test_tools.environment.EnvironmentController.get_service_list',
+                lambda _self: SERVICE_NAMES)
+    def test_log_file_split(self):
+        """Validate environment controller methods behave as expected."""
+        with mock.patch("subprocess.check_output") as mocked_check_output:
+            self.controller.get_containers_logs()
+        for service_name in SERVICE_NAMES:
+            mocked_check_output.assert_any_call(
+                'docker-compose -f {compose_path} -p {project_name} logs --no-color {service_name} > {log_path}'.format(
+                    compose_path=self.compose_path,
+                    project_name=self.project_name,
+                    log_path=self.controller._get_service_log_file_name(service_name),
+                    service_name=service_name or ''),
+                shell=True, stderr=subprocess.STDOUT
+            )

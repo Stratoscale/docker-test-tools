@@ -81,16 +81,18 @@ class EnvironmentController(object):
                                            shell=True, stderr=subprocess.STDOUT)
 
         except subprocess.CalledProcessError as error:
-            raise RuntimeError("Failed getting list of services, reason: \n%s", error.output)
+            raise RuntimeError("Failed getting list of services, reason: %s", error.output)
         return text.strip().split('\n')
+
+    def _get_service_log_file_name(self, service_name=None):
+        if not service_name:
+            return self.log_path
+        log_dir, _ = os.path.split(self.log_path)
+        return os.path.join(log_dir, '{}.log'.format(service_name))
 
     def _get_container_logs(self, service_name=None):
         """Write the logs of a service container (or all of them) to files."""
-        if service_name:
-            log_dir, _ = os.path.split(self.log_path)
-            log_path = os.path.join(log_dir, '{}.log'.format(service_name))
-        else:
-            log_path = self.log_path
+        log_path = self._get_service_log_file_name(service_name)
         logging.info("Writing containers logs to %s, using docker compose: %s", log_path, self.compose_path)
         try:
             subprocess.check_output(
