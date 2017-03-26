@@ -149,7 +149,7 @@ class TestEnvironmentController(unittest.TestCase):
         get_log_mock.assert_called_once_with()
 
     @mock.patch('docker_test_tools.environment.EnvironmentController.get_service_list',
-                lambda _self: SERVICE_NAMES)
+                mock.MagicMock(return_value=SERVICE_NAMES))
     def test_log_file_split(self):
         """Validate environment controller methods behave as expected."""
         with mock.patch("subprocess.check_output") as mocked_check_output:
