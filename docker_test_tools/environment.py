@@ -76,6 +76,7 @@ class EnvironmentController(object):
             raise RuntimeError("Failed killing environment containers, reason: \n%s", error.output)
 
     def get_service_list(self):
+        """Returns the list of services defined in the docker-compose YAML file."""
         try:
             text = subprocess.check_output('docker-compose -f {compose_path} config --services'.format(compose_path=self.compose_path),
                                            shell=True, stderr=subprocess.STDOUT)
@@ -85,6 +86,7 @@ class EnvironmentController(object):
         return text.strip().split('\n')
 
     def _get_service_log_file_name(self, service_name=None):
+        """Returns a filename for the log of a service or of the combined log."""
         if not service_name:
             return self.log_path
         log_dir, _ = os.path.split(self.log_path)
@@ -105,6 +107,7 @@ class EnvironmentController(object):
             raise RuntimeError("Failed writing environment containers log, reason: \n%s", error.output)
 
     def get_containers_logs(self):
+        """Write the logs of all service container, as well as the combined log to files."""
         self._get_container_logs()
         for service_name in self.get_service_list() + [None]:
             self._get_container_logs(service_name)
