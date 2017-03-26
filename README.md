@@ -127,7 +127,7 @@ class ExampleTest(BaseDockerTest):
         self.assertEquals(requests.post('http://mocked.service:9999/test').status_code, httplib.NOT_FOUND)
 
         logging.info('Use WiremockController to stub the service `test` endpoint')
-        stubs_dir_path = os.path.join(os.path.dirname(__file__), '..', 'resources', 'wiremock_stubs')``````
+        stubs_dir_path = os.path.join(os.path.dirname(__file__), '..', 'resources', 'wiremock_stubs')
         self.wiremock.set_mapping_from_dir(stubs_dir_path)
 
         logging.info('Validating mocked service response on `test` endpoint')
