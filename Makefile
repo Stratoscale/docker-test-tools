@@ -3,12 +3,12 @@
 # Local Docker version
 DOCKER_VERSION = $(shell docker version --format '{{.Server.Version}}')
 
-ifneq ($(filter $(DOCKER_VERSION),1.6.0 1.7.0 1.8.0 1.9.0 1.10.0 1.11.0),)
-# Docker version doesn't supports health checks (<1.12.0)
-DTT_COMPOSE_PATH=tests/resources/docker-compose-v2.yml
-else
+ifeq "1.12.0" "$(word 1, $(sort 1.12.0 $(DOCKER_VERSION)))"
 # Docker version supports health checks (>=1.12.0)
 DTT_COMPOSE_PATH=tests/resources/docker-compose.yml
+else
+# Docker version doesn't supports health checks (<1.12.0)
+DTT_COMPOSE_PATH=tests/resources/docker-compose-v2.yml
 endif
 
 all: coverage nose2 pytest dist/docker-test-tools-*.tar.gz
