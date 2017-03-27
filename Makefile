@@ -1,7 +1,7 @@
 # *** WARNING: Targets are meant to run in a build container - Use skipper make ***
 
-# Local Docker version
-DOCKER_VERSION = $(shell docker version --format '{{.Server.Version}}')
+# Get local Docker version - use a default value in case of failure
+DOCKER_VERSION = $(shell docker version --format '{{.Server.Version}}' || echo 1.10.0)
 
 ifeq "1.12.0" "$(word 1, $(sort 1.12.0 $(DOCKER_VERSION)))"
 # Docker version supports health checks (>=1.12.0)
