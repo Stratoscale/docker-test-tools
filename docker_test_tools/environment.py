@@ -119,10 +119,11 @@ class EnvironmentController(object):
         log_path = self._get_service_log_file_name(service_name)
         logging.info("Writing containers logs to %s, using docker compose: %s", log_path, self.compose_path)
         try:
+            service_command = "{service_name} | sed 's/^[^|]*| //'".format(service_name=service_name) if service_name else ''
             subprocess.check_output(
-                'docker-compose -f {compose_path} -p {project_name} logs --no-color {service_name} > {log_path}'.format(
+                'docker-compose -f {compose_path} -p {project_name} logs --no-color {service_command} > {log_path}'.format(
                     compose_path=self.compose_path, project_name=self.project_name, log_path=log_path,
-                    service_name=service_name or ''),
+                    service_command=service_command),
                 shell=True, stderr=subprocess.STDOUT
             )
         except subprocess.CalledProcessError as error:

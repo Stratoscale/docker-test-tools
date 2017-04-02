@@ -244,12 +244,13 @@ services:
         with mock.patch("subprocess.check_output") as mocked_check_output:
             self.controller.get_containers_logs()
         for service_name in SERVICE_NAMES:
+            service_command = "{service_name} | sed 's/^[^|]*| //'".format(service_name=service_name) if service_name else ''
             mocked_check_output.assert_any_call(
-                'docker-compose -f {compose_path} -p {project_name} logs --no-color {service_name} > {log_path}'.format(
+                'docker-compose -f {compose_path} -p {project_name} logs --no-color {service_command} > {log_path}'.format(
                     compose_path=self.compose_path,
                     project_name=self.project_name,
                     log_path=self.controller._get_service_log_file_name(service_name),
-                    service_name=service_name or ''),
+                    service_command=service_command),
                 shell=True, stderr=subprocess.STDOUT
             )
 
