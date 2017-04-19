@@ -11,6 +11,6 @@ services:
     networks: [tests-network]
 
   mocked.service:
-    image: rackattack-nas.dc1:5000/wiremock:7921b9c1916a2d2bc8bd929cd7e074b8eec38ac8
+    image: stratoscale/wiremock:latest
     networks: [tests-network]
     command: "9999"
