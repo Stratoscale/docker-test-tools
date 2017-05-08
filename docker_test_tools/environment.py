@@ -100,8 +100,9 @@ class EnvironmentController(object):
     def get_service_list(self):
         """Returns the list of services defined in the docker-compose YAML file."""
         try:
-            text = subprocess.check_output('docker-compose -f {compose_path} config --services'.format(compose_path=self.compose_path),
-                                           shell=True, stderr=subprocess.STDOUT)
+            text = subprocess.check_output(
+                'docker-compose -f {compose_path} config --services'.format(compose_path=self.compose_path),
+                shell=True, stderr=subprocess.STDOUT)
 
         except subprocess.CalledProcessError as error:
             raise RuntimeError("Failed getting list of services, reason: %s", error.output)
@@ -119,10 +120,13 @@ class EnvironmentController(object):
         log_path = self._get_service_log_file_name(service_name)
         logging.info("Writing containers logs to %s, using docker compose: %s", log_path, self.compose_path)
         try:
-            service_command = "{service_name} | sed 's/^[^|]*| //'".format(service_name=service_name) if service_name else ''
+            service_command = "{service_name} | sed 's/^[^|]*| //'".format(
+                service_name=service_name) if service_name else ''
             subprocess.check_output(
                 'docker-compose -f {compose_path} -p {project_name} logs --no-color {service_command} > {log_path}'.format(
-                    compose_path=self.compose_path, project_name=self.project_name, log_path=log_path,
+                    compose_path=self.compose_path,
+                    project_name=self.project_name,
+                    log_path=log_path,
                     service_command=service_command),
                 shell=True, stderr=subprocess.STDOUT
             )
@@ -187,6 +191,36 @@ class EnvironmentController(object):
         except subprocess.CalledProcessError as error:
             raise RuntimeError("Failed restarting container %s reason: %s" % (name, error.output))
 
+    def pause_container(self, name):
+        """Pause the container.
+
+        :param str name: container name as it appears in the docker compose file.
+        """
+        self.validate_service_name(name)
+        logging.debug("Pausing %s container", name)
+        try:
+            subprocess.check_output(
+                ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'pause', name],
+                stderr=subprocess.STDOUT
+            )
+        except subprocess.CalledProcessError as error:
+            raise RuntimeError("Failed pausing container %s reason: %s" % (name, error.output))
+
+    def unpause_container(self, name):
+        """Unpause the container.
+
+        :param str name: container name as it appears in the docker compose file.
+        """
+        self.validate_service_name(name)
+        logging.debug("Unpausing %s container", name)
+        try:
+            subprocess.check_output(
+                ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'unpause', name],
+                stderr=subprocess.STDOUT
+            )
+        except subprocess.CalledProcessError as error:
+            raise RuntimeError("Failed unpausing container %s reason: %s" % (name, error.output))
+
     def get_container_id(self, name):
         """Get container id by name.
 
@@ -214,7 +248,7 @@ class EnvironmentController(object):
         container_id = self.get_container_id(name)
         try:
             status_output = subprocess.check_output(r"docker inspect --format='{{json .State}}' " + container_id,
-                                             shell=True)
+                                                    shell=True)
 
         except subprocess.CalledProcessError as error:
             logging.warning("Failed getting container %s state, reason: %s", name, error.output)
@@ -274,6 +308,32 @@ class EnvironmentController(object):
             yield
         finally:
             self.restart_container(name=name)
+            self.wait_for_services(services=[name, ], interval=interval, timeout=timeout)
+
+    @contextmanager
+    def container_paused(self, name, interval=1, timeout=60):
+        """Container pause context manager.
+
+        pause the container within the context, once context ends un-pause the container and wait for 
+        the service check to pass.
+
+        :param str name: container name as it appears in the docker compose file.
+        :param int interval: interval (in seconds) between checks.
+        :param int timeout: timeout (in seconds) for all checks to pass.
+
+        Usage:
+
+        >>> with controller.container_paused(name='consul'):
+        >>>     # container will be paused in this context
+        >>>
+        >>> # container will be back up after context end
+        """
+        self.validate_service_name(name)
+        self.pause_container(name=name)
+        try:
+            yield
+        finally:
+            self.unpause_container(name=name)
             self.wait_for_services(services=[name, ], interval=interval, timeout=timeout)
 
     def validate_service_name(self, name):

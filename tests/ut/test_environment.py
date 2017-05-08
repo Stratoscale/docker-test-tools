@@ -54,13 +54,6 @@ services:
             stderr=subprocess.STDOUT
         )
 
-        # self.controller.get_containers_logs()
-        # mocked_check_output.assert_called_with(
-        #     'docker-compose -f {compose_path} -p {project_name} logs --no-color > {log_path}'.format(
-        #         compose_path=self.compose_path, project_name=self.project_name, log_path=self.log_path),
-        #     shell=True, stderr=subprocess.STDOUT
-        # )
-
     @mock.patch('docker_test_tools.environment.EnvironmentController.validate_service_name', mock.MagicMock())
     @mock.patch("subprocess.check_output")
     def test_container_methods_happy_flow(self, mocked_check_output):
@@ -82,6 +75,18 @@ services:
         self.controller.get_container_id(service_name)
         mocked_check_output.assert_called_with(
             ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'ps', '-q', service_name],
+            stderr=subprocess.STDOUT
+        )
+
+        self.controller.pause_container(service_name)
+        mocked_check_output.assert_called_with(
+            ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'pause', service_name],
+            stderr=subprocess.STDOUT
+        )
+
+        self.controller.unpause_container(service_name)
+        mocked_check_output.assert_called_with(
+            ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'unpause', service_name],
             stderr=subprocess.STDOUT
         )
 
@@ -130,6 +135,12 @@ services:
             self.controller.restart_container('test')
 
         with self.assertRaises(RuntimeError):
+            self.controller.pause_container('test')
+
+        with self.assertRaises(RuntimeError):
+            self.controller.unpause_container('test')
+
+        with self.assertRaises(RuntimeError):
             self.controller.get_container_id('test')
 
         mock_get_id = mock.MagicMock(return_value='test-id')
@@ -168,6 +179,26 @@ services:
         mock_is_ready.assert_called_with('service1')
         mocked_check_output.assert_called_with(
             ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'restart', 'service1'],
+            stderr=subprocess.STDOUT
+        )
+
+    @mock.patch('docker_test_tools.environment.EnvironmentController.validate_service_name', mock.MagicMock())
+    @mock.patch("docker_test_tools.environment.EnvironmentController.is_container_ready")
+    @mock.patch("subprocess.check_output")
+    def test_container_paused(self, mocked_check_output, mock_is_ready):
+        """Validate container_down context manager - without health check."""
+        controller = self.get_controller()
+
+        mock_is_ready.return_value = True
+        with controller.container_paused('service1'):
+            mocked_check_output.assert_called_with(
+                ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'pause', 'service1'],
+                stderr=subprocess.STDOUT
+            )
+
+        mock_is_ready.assert_called_with('service1')
+        mocked_check_output.assert_called_with(
+            ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'unpause', 'service1'],
             stderr=subprocess.STDOUT
         )
 

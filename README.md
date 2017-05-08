@@ -121,6 +121,19 @@ class ExampleTest(BaseDockerTest):
         logging.info('Validating consul container has recovered and is responsive')
         self.assertEquals(requests.get('http://consul.service:8500').status_code, httplib.OK)
 
+    def test_service_paused(self):
+        """Validate service paused scenario."""
+        logging.info('Validating consul container is responsive')
+        self.assertEquals(requests.get('http://consul.service:8500', timeout=2).status_code, httplib.OK)
+
+        logging.info('Validating consul container is unresponsive while in `container_paused` context')
+        with self.controller.container_paused(name='consul.service'):
+            with self.assertRaises(requests.Timeout):
+                requests.get('http://consul.service:8500', timeout=2)
+
+        logging.info('Validating consul container has recovered and is responsive')
+        self.assertEquals(requests.get('http://consul.service:8500', timeout=2).status_code, httplib.OK)
+
     def test_mocked_service_configuration(self):
         """Validate wiremock service."""
         logging.info('Validating mocked service fail to find `test` endpoint')
