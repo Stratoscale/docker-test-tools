@@ -156,15 +156,16 @@ $ CONFIG=test.cfg nose2 --config=test.cfg --verbose --project-directory .
 ```
 Outcome:
 ```
-test_mocked_service_configuration (tests.nose2_example.test_example.ExampleTest)
 Validate wiremock service. ... ok
-test_service_down (tests.nose2_example.test_example.ExampleTest)
+test_service_down (tests.integration.test_example.ExampleTest)
 Validate service down scenario. ... ok
-test_services_sanity (tests.nose2_example.test_example.ExampleTest)
+test_service_paused (tests.integration.test_example.ExampleTest)
+Validate service paused scenario. ... ok
+test_services_sanity (tests.integration.test_example.ExampleTest)
 Validate services are responsive once the test start. ... ok
 
 ----------------------------------------------------------------------
-Ran 3 tests in 26.082s
+Ran 4 tests in 30.789s
 
 OK
 ```
@@ -200,11 +201,15 @@ $ CONFIG=tests/pytest_example/test.cfg pytest tests/pytest_example/
 Outcome:
 ```
 ==== ... ==== test session starts ==== ... ====
-platform linux2 -- Python 2.7.5, pytest-3.0.6, py-1.4.32, pluggy-0.4.0
-rootdir: /docker-test-tools, inifile: 
-collected 3 items 
+platform linux2 -- Python 2.7.13, pytest-3.0.6, py-1.4.33, pluggy-0.4.0 -- /usr/local/bin/python2
+cachedir: .cache
+rootdir: /home/sarbov/work/docker-test-tools, inifile: 
+collected 4 items 
 
-tests/pytest_example/test_example.py ...
+tests/integration/test_example.py::ExampleTest::test_mocked_service_configuration PASSED
+tests/integration/test_example.py::ExampleTest::test_service_down PASSED
+tests/integration/test_example.py::ExampleTest::test_service_paused PASSED
+tests/integration/test_example.py::ExampleTest::test_services_sanity PASSED
 
-==== ... ==== 3 passed in 28.41 seconds ==== ... ====
+==== ... ==== 4 passed in 32.02 seconds ==== ... ====
 ```

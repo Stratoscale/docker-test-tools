@@ -26,14 +26,14 @@ nose2:
 	mkdir -p build/
 
 	# Run the example nose2 tests - validate the package works
-	CONFIG=tests/nose2/nose2.cfg  DTT_COMPOSE_PATH=$(DTT_COMPOSE_PATH) \
-	nose2 --config=tests/nose2/nose2.cfg --verbose --project-directory .
+	CONFIG=tests/integration/nose2.cfg DTT_COMPOSE_PATH=$(DTT_COMPOSE_PATH) \
+	nose2 --config=tests/integration/nose2.cfg --verbose --project-directory .
 
 pytest:
 	mkdir -p build/
 
 	# Run the example pytest tests - validate the package works
-	CONFIG=tests/pytest/pytest.cfg DTT_COMPOSE_PATH=$(DTT_COMPOSE_PATH)  pytest -v tests/pytest/
+	CONFIG=tests/integration/pytest.cfg DTT_COMPOSE_PATH=$(DTT_COMPOSE_PATH)  pytest -v tests/integration/
 
 dist/docker-test-tools-*.tar.gz:
 	# Create the source distribution
