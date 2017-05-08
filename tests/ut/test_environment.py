@@ -21,6 +21,7 @@ services:
     healthcheck:
         test: 'test'
 """
+    ENVIRONMENT_VARIABLES = {'test': 'test'}
 
     def setUp(self):
         self.project_name = 'test-project'
@@ -39,19 +40,19 @@ services:
         self.controller.run_containers()
         mocked_check_output.assert_called_with(
             ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'up', '--build', '-d'],
-            stderr=subprocess.STDOUT
+            stderr=subprocess.STDOUT, env=self.ENVIRONMENT_VARIABLES
         )
 
         self.controller.kill_containers()
         mocked_check_output.assert_called_with(
             ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'kill'],
-            stderr=subprocess.STDOUT
+            stderr=subprocess.STDOUT, env=self.ENVIRONMENT_VARIABLES
         )
 
         self.controller.remove_containers()
         mocked_check_output.assert_called_with(
             ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'rm', '-f'],
-            stderr=subprocess.STDOUT
+            stderr=subprocess.STDOUT, env=self.ENVIRONMENT_VARIABLES
         )
 
     @mock.patch('docker_test_tools.environment.EnvironmentController.validate_service_name', mock.MagicMock())
@@ -63,50 +64,62 @@ services:
         self.controller.kill_container(service_name)
         mocked_check_output.assert_called_with(
             ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'kill', service_name],
-            stderr=subprocess.STDOUT
+            stderr=subprocess.STDOUT, env=self.ENVIRONMENT_VARIABLES
         )
 
         self.controller.restart_container(service_name)
         mocked_check_output.assert_called_with(
             ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'restart', service_name],
-            stderr=subprocess.STDOUT
+            stderr=subprocess.STDOUT, env=self.ENVIRONMENT_VARIABLES
         )
 
         self.controller.get_container_id(service_name)
         mocked_check_output.assert_called_with(
             ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'ps', '-q', service_name],
-            stderr=subprocess.STDOUT
+            stderr=subprocess.STDOUT, env=self.ENVIRONMENT_VARIABLES
         )
 
         self.controller.pause_container(service_name)
         mocked_check_output.assert_called_with(
             ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'pause', service_name],
-            stderr=subprocess.STDOUT
+            stderr=subprocess.STDOUT, env=self.ENVIRONMENT_VARIABLES
         )
 
         self.controller.unpause_container(service_name)
         mocked_check_output.assert_called_with(
             ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'unpause', service_name],
-            stderr=subprocess.STDOUT
+            stderr=subprocess.STDOUT, env=self.ENVIRONMENT_VARIABLES
         )
 
         mock_get_id = mock.MagicMock(return_value='test-id')
         with mock.patch("docker_test_tools.environment.EnvironmentController.get_container_id", mock_get_id):
             mocked_check_output.return_value = '{"Health": {"Status":"healthy"}}'
             self.assertTrue(self.controller.is_container_ready('test'))
-            mocked_check_output.assert_called_with(r"docker inspect --format='{{json .State}}' test-id", shell=True)
+            mocked_check_output.assert_called_with(
+                r"docker inspect --format='{{json .State}}' test-id",
+                shell=True, stderr=subprocess.STDOUT, env=self.ENVIRONMENT_VARIABLES
+            )
 
             mocked_check_output.return_value = '{"Health": {"Status":"unhealthy"}}'
             self.assertFalse(self.controller.is_container_ready('test'))
-            mocked_check_output.assert_called_with(r"docker inspect --format='{{json .State}}' test-id", shell=True)
+            mocked_check_output.assert_called_with(
+                r"docker inspect --format='{{json .State}}' test-id",
+                shell=True, stderr=subprocess.STDOUT, env=self.ENVIRONMENT_VARIABLES
+            )
 
             mocked_check_output.return_value = '{"Status":"running"}'
             self.assertTrue(self.controller.is_container_ready('test'))
-            mocked_check_output.assert_called_with(r"docker inspect --format='{{json .State}}' test-id", shell=True)
+            mocked_check_output.assert_called_with(
+                r"docker inspect --format='{{json .State}}' test-id",
+                shell=True, stderr=subprocess.STDOUT, env=self.ENVIRONMENT_VARIABLES
+            )
 
             mocked_check_output.return_value = '{"Status":"not-running"}'
             self.assertFalse(self.controller.is_container_ready('test'))
-            mocked_check_output.assert_called_with(r"docker inspect --format='{{json .State}}' test-id", shell=True)
+            mocked_check_output.assert_called_with(
+                r"docker inspect --format='{{json .State}}' test-id",
+                shell=True, stderr=subprocess.STDOUT, env=self.ENVIRONMENT_VARIABLES
+            )
 
     @mock.patch('subprocess.check_output', mock.MagicMock(side_effect=subprocess.CalledProcessError(1, '', '')))
     @mock.patch('docker_test_tools.environment.EnvironmentController.validate_service_name', mock.MagicMock())
@@ -173,13 +186,13 @@ services:
         with controller.container_down('service1'):
             mocked_check_output.assert_called_with(
                 ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'kill', 'service1'],
-                stderr=subprocess.STDOUT
+                stderr=subprocess.STDOUT, env=self.ENVIRONMENT_VARIABLES
             )
 
         mock_is_ready.assert_called_with('service1')
         mocked_check_output.assert_called_with(
             ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'restart', 'service1'],
-            stderr=subprocess.STDOUT
+            stderr=subprocess.STDOUT, env=self.ENVIRONMENT_VARIABLES
         )
 
     @mock.patch('docker_test_tools.environment.EnvironmentController.validate_service_name', mock.MagicMock())
@@ -193,13 +206,13 @@ services:
         with controller.container_paused('service1'):
             mocked_check_output.assert_called_with(
                 ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'pause', 'service1'],
-                stderr=subprocess.STDOUT
+                stderr=subprocess.STDOUT, env=self.ENVIRONMENT_VARIABLES
             )
 
         mock_is_ready.assert_called_with('service1')
         mocked_check_output.assert_called_with(
             ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'unpause', 'service1'],
-            stderr=subprocess.STDOUT
+            stderr=subprocess.STDOUT, env=self.ENVIRONMENT_VARIABLES
         )
 
     @mock.patch('docker_test_tools.environment.EnvironmentController.kill_containers')
@@ -275,19 +288,21 @@ services:
         with mock.patch("subprocess.check_output") as mocked_check_output:
             self.controller.get_containers_logs()
         for service_name in SERVICE_NAMES:
-            service_command = "{service_name} | sed 's/^[^|]*| //'".format(service_name=service_name) if service_name else ''
+            service_command = "{service_name} | sed 's/^[^|]*| //'".format(
+                service_name=service_name) if service_name else ''
             mocked_check_output.assert_any_call(
                 'docker-compose -f {compose_path} -p {project_name} logs --no-color {service_command} > {log_path}'.format(
                     compose_path=self.compose_path,
                     project_name=self.project_name,
                     log_path=self.controller._get_service_log_file_name(service_name),
                     service_command=service_command),
-                shell=True, stderr=subprocess.STDOUT
+                shell=True, stderr=subprocess.STDOUT, env=self.ENVIRONMENT_VARIABLES
             )
 
+    @mock.patch('docker_test_tools.environment.EnvironmentController._get_environment_variables',
+                mock.MagicMock(return_value=ENVIRONMENT_VARIABLES))
     def get_controller(self):
         """Returns a new EnvironmentController."""
-
         with mock.patch("subprocess.check_output", return_value="service1\nservice2\n"):
             return environment.EnvironmentController(log_path=self.log_path,
                                                      compose_path=self.compose_path,

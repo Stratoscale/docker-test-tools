@@ -6,6 +6,7 @@ import waiting
 from contextlib import contextmanager
 
 import config
+from api_version import get_server_api_version
 
 
 class EnvironmentController(object):
@@ -13,10 +14,11 @@ class EnvironmentController(object):
 
     def __init__(self, project_name, compose_path, log_path, reuse_containers=False):
         self.log_path = log_path
-        self.project_name = project_name
         self.compose_path = compose_path
+        self.project_name = project_name
         self.reuse_containers = reuse_containers
 
+        self.environment_variables = self._get_environment_variables()
         self.services = self.get_services()
 
     @classmethod
@@ -40,7 +42,7 @@ class EnvironmentController(object):
         try:
             services_output = subprocess.check_output(
                 ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'config', '--services'],
-                stderr=subprocess.STDOUT
+                stderr=subprocess.STDOUT, env=self.environment_variables
             )
 
         except subprocess.CalledProcessError as error:
@@ -91,7 +93,7 @@ class EnvironmentController(object):
         try:
             subprocess.check_output(
                 ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'up', '--build', '-d'],
-                stderr=subprocess.STDOUT
+                stderr=subprocess.STDOUT, env=self.environment_variables
             )
 
         except subprocess.CalledProcessError as error:
@@ -102,7 +104,7 @@ class EnvironmentController(object):
         try:
             text = subprocess.check_output(
                 'docker-compose -f {compose_path} config --services'.format(compose_path=self.compose_path),
-                shell=True, stderr=subprocess.STDOUT)
+                shell=True, stderr=subprocess.STDOUT, env=self.environment_variables)
 
         except subprocess.CalledProcessError as error:
             raise RuntimeError("Failed getting list of services, reason: %s", error.output)
@@ -128,7 +130,7 @@ class EnvironmentController(object):
                     project_name=self.project_name,
                     log_path=log_path,
                     service_command=service_command),
-                shell=True, stderr=subprocess.STDOUT
+                shell=True, stderr=subprocess.STDOUT, env=self.environment_variables
             )
         except subprocess.CalledProcessError as error:
             raise RuntimeError("Failed writing environment containers log, reason: %s" % error.output)
@@ -145,7 +147,7 @@ class EnvironmentController(object):
         try:
             subprocess.check_output(
                 ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'rm', '-f'],
-                stderr=subprocess.STDOUT
+                stderr=subprocess.STDOUT, env=self.environment_variables
             )
         except subprocess.CalledProcessError as error:
             raise RuntimeError("Failed removing environment containers, reason: %s" % error.output)
@@ -156,7 +158,7 @@ class EnvironmentController(object):
         try:
             subprocess.check_output(
                 ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'kill'],
-                stderr=subprocess.STDOUT
+                stderr=subprocess.STDOUT, env=self.environment_variables
             )
         except subprocess.CalledProcessError as error:
             raise RuntimeError("Failed running environment containers, reason: %s" % error.output)
@@ -171,7 +173,7 @@ class EnvironmentController(object):
         try:
             subprocess.check_output(
                 ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'kill', name],
-                stderr=subprocess.STDOUT
+                stderr=subprocess.STDOUT, env=self.environment_variables
             )
         except subprocess.CalledProcessError as error:
             raise RuntimeError("Failed killing container %s reason: %s" % (name, error.output))
@@ -186,7 +188,7 @@ class EnvironmentController(object):
         try:
             subprocess.check_output(
                 ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'restart', name],
-                stderr=subprocess.STDOUT
+                stderr=subprocess.STDOUT, env=self.environment_variables
             )
         except subprocess.CalledProcessError as error:
             raise RuntimeError("Failed restarting container %s reason: %s" % (name, error.output))
@@ -201,7 +203,7 @@ class EnvironmentController(object):
         try:
             subprocess.check_output(
                 ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'pause', name],
-                stderr=subprocess.STDOUT
+                stderr=subprocess.STDOUT, env=self.environment_variables
             )
         except subprocess.CalledProcessError as error:
             raise RuntimeError("Failed pausing container %s reason: %s" % (name, error.output))
@@ -216,7 +218,7 @@ class EnvironmentController(object):
         try:
             subprocess.check_output(
                 ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'unpause', name],
-                stderr=subprocess.STDOUT
+                stderr=subprocess.STDOUT, env=self.environment_variables
             )
         except subprocess.CalledProcessError as error:
             raise RuntimeError("Failed unpausing container %s reason: %s" % (name, error.output))
@@ -230,7 +232,7 @@ class EnvironmentController(object):
         try:
             return subprocess.check_output(
                 ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'ps', '-q', name],
-                stderr=subprocess.STDOUT
+                stderr=subprocess.STDOUT, env=self.environment_variables
             )
         except subprocess.CalledProcessError as error:
             raise RuntimeError("Failed getting container %s id, reason: %s" % (name, error.output))
@@ -247,8 +249,10 @@ class EnvironmentController(object):
         logging.debug("Getting %s container state", name)
         container_id = self.get_container_id(name)
         try:
-            status_output = subprocess.check_output(r"docker inspect --format='{{json .State}}' " + container_id,
-                                                    shell=True)
+            status_output = subprocess.check_output(
+                r"docker inspect --format='{{json .State}}' " + container_id,
+                shell=True, stderr=subprocess.STDOUT, env=self.environment_variables
+            )
 
         except subprocess.CalledProcessError as error:
             logging.warning("Failed getting container %s state, reason: %s", name, error.output)
@@ -339,3 +343,12 @@ class EnvironmentController(object):
     def validate_service_name(self, name):
         if name not in self.services:
             raise ValueError('Invalid service name: %r, must be one of %s' % (name, self.services))
+
+    @staticmethod
+    def _get_environment_variables():
+        """Set the compose api version according to the server's api version"""
+        server_api_version = get_server_api_version()
+        logging.debug("docker server api version is %s, updating environment_variables", server_api_version)
+        env = os.environ.copy()
+        env['COMPOSE_API_VERSION'] = env['DOCKER_API_VERSION'] = server_api_version
+        return env
