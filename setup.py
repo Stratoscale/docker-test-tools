@@ -1,12 +1,19 @@
 # coding: utf-8
+import os
 import subprocess
+
 from setuptools import setup, find_packages
 
 
 def get_git_revision():
-    """Return the git revision"""
-    return subprocess.check_output('git rev-parse HEAD', shell=True).strip()
+    """Return the git revision."""
+    if os.path.exists('PKG-INFO'):
+        with open('PKG-INFO') as package_info:
+            for key, value in (line.split(':', 1) for line in package_info):
+                if key.startswith('Version'):
+                    return value.strip()
 
+    return subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip()
 
 setup(
     name="docker-test-tools",
