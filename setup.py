@@ -1,9 +1,16 @@
 # coding: utf-8
+import subprocess
 from setuptools import setup, find_packages
+
+
+def get_git_revision():
+    """Return the git revision"""
+    return subprocess.check_output('git rev-parse HEAD', shell=True).strip()
+
 
 setup(
     name="docker-test-tools",
-    git_version=True,
+    version=get_git_revision(),
     description="Docker test tools",
     author_email="",
     url="",
