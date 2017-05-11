@@ -72,3 +72,24 @@ class ExampleTest(BaseDockerTest):
 
         logging.info('Validating mocked service response on `test` endpoint')
         self.assertEquals(requests.post('http://mocked.service:9999/test').status_code, httplib.OK)
+
+    def test_mocked_service_request_journal(self):
+        """Validate wiremock request journal."""
+        logging.info('Validating first request reaches the journal')
+        requests.post('http://mocked.service:9999/some-unique-request-33452')
+        journal = self.wiremock.get_request_journal()
+        inner_url = journal[-1]['request']['url']
+        self.assertEquals(inner_url, "/some-unique-request-33452")
+
+        logging.info('Validating filtering of specific requests from the journal')
+        requests.post('http://mocked.service:9999/test2')
+        requests.post('http://mocked.service:9999/test2')
+        filtered = self.wiremock.get_matching_requests('/test2')
+        self.assertEquals(len(filtered), 2)
+        self.assertEquals(filtered[0]['request']['url'], "/test2")
+        self.assertEquals(filtered[1]['request']['url'], "/test2")
+
+        logging.info('Validating the deletion of requests from the journal')
+        self.wiremock.delete_request_journal()
+        journal = self.wiremock.get_matching_requests('/test2')
+        self.assertEquals(len(journal), 0)

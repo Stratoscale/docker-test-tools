@@ -1,4 +1,5 @@
 import mock
+import httplib
 import unittest
 
 from docker_test_tools import wiremock
@@ -8,6 +9,8 @@ class TestWiremockController(unittest.TestCase):
 
     def setUp(self):
         self.controller = wiremock.WiremockController(url='http://mocked.service:9999')
+        with open("tests/resources/ut/requests-journal.json") as journal_file:
+            self.journal_json = journal_file.read()
 
     def test_reset_mapping(self):
         """Test reset mapping method."""
@@ -94,3 +97,50 @@ class TestWiremockController(unittest.TestCase):
             self.controller.set_mapping_from_dir(test_dir)
             glob_mock.assert_called_once_with('some/dir/*.json')
             from_files_mock.assert_called_once_with(test_paths)
+
+    def test_get_request_journal(self):
+        """Test 'get_request_journal' method."""
+
+        mock_response = mock.Mock()
+        mock_response.status_code = httplib.OK
+        mock_response.text = self.journal_json
+        mock_get = mock.Mock(return_value=mock_response)
+
+        with mock.patch("requests.get", mock_get):
+            requests = self.controller.get_request_journal()
+            mock_get.assert_called_once_with("http://mocked.service:9999/__admin/requests")
+            self.assertEquals(requests[0]["request"]["url"], "/received-request/7")
+            self.assertEquals(requests[1]["request"]["url"], "/received-request/6")
+
+    def test_error_getting_request_journal(self):
+        """Test HTTP error while getting request journal."""
+
+        mock_response = mock.Mock()
+        mock_response.status_code = httplib.NOT_FOUND
+        mock_get = mock.Mock(return_value=mock_response)
+
+        with mock.patch("requests.get", mock_get):
+            self.assertRaises(ValueError, self.controller.get_request_journal)
+
+    def test_get_matching_requests(self):
+        """Test 'get_matching_requests' method."""
+
+        mock_response = mock.Mock()
+        mock_response.status_code = httplib.OK
+        mock_response.text = self.journal_json
+        mock_get = mock.Mock(return_value=mock_response)
+
+        with mock.patch("requests.get", mock_get):
+            requests = self.controller.get_matching_requests("/received-request/6")
+            mock_get.assert_called_once_with("http://mocked.service:9999/__admin/requests")
+            self.assertEquals(len(requests), 1)
+            self.assertEquals(requests[0]["request"]["url"], "/received-request/6")
+
+    def test_delete_request_journal(self):
+        """Test 'delete_request_journal' method."""
+
+        mock_delete = mock.Mock()
+
+        with mock.patch("requests.delete", mock_delete):
+            self.controller.delete_request_journal()
+            mock_delete.assert_called_once_with("http://mocked.service:9999/__admin/requests")

@@ -1,0 +1,57 @@
+{
+  "requests" : [ {
+    "id" : "95bd9a40-82d4-47ce-9383-25a9e972f05d",
+    "request" : {
+      "url" : "/received-request/7",
+      "absoluteUrl" : "http://localhost:51490/received-request/7",
+      "method" : "GET",
+      "clientIp" : "127.0.0.1",
+      "headers" : {
+        "Connection" : "keep-alive",
+        "User-Agent" : "Apache-HttpClient/4.5.1 (Java/1.8.0_45)",
+        "Host" : "localhost:51490"
+      },
+      "cookies" : { },
+      "browserProxyRequest" : false,
+      "loggedDate" : 1475495213275,
+      "bodyAsBase64" : "",
+      "body" : "",
+      "loggedDateString" : "2016-10-03T11:46:53Z"
+    },
+    "responseDefinition" : {
+      "status" : 200,
+      "body" : "This was matched"
+    },
+    "wasMatched" : true
+  }, {
+    "id" : "aa1a4250-f87c-4a17-82e3-79c83441ce03",
+    "request" : {
+      "url" : "/received-request/6",
+      "absoluteUrl" : "http://localhost:51490/received-request/6",
+      "method" : "GET",
+      "clientIp" : "127.0.0.1",
+      "headers" : {
+        "Connection" : "keep-alive",
+        "User-Agent" : "Apache-HttpClient/4.5.1 (Java/1.8.0_45)",
+        "Host" : "localhost:51490"
+      },
+      "cookies" : { },
+      "browserProxyRequest" : false,
+      "loggedDate" : 1475495213268,
+      "bodyAsBase64" : "",
+      "body" : "",
+      "loggedDateString" : "2016-10-03T11:46:53Z"
+    },
+    "responseDefinition" : {
+      "status" : 404,
+      "transformers" : [ ],
+      "fromConfiguredStub" : false,
+      "transformerParameters" : { }
+    },
+    "wasMatched" : false
+  } ],
+  "meta" : {
+    "total" : 2
+  },
+  "requestJournalDisabled" : false
+}

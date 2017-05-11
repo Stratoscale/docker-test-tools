@@ -5,6 +5,7 @@ For more info about wiremock visit: http://wiremock.org
 import os
 import json
 import glob
+import httplib
 import logging
 
 import requests
@@ -33,6 +34,7 @@ class WiremockController(object):
         self.admin_url = os.path.join(url, "__admin")
         self.admin_mapping_url = os.path.join(self.admin_url, "mappings")
         self.mapping_reset_url = os.path.join(self.admin_mapping_url, 'reset')
+        self.requests_url = "%s/requests" % self.admin_url
 
     def set_mapping_from_dir(self, dir_path):
         """Set wiremock service mapping based on given directory.
@@ -85,3 +87,26 @@ class WiremockController(object):
         except:
             logging.exception('Failed resetting %s wiremock mapping', self.url)
             raise WiremockError('Failed resetting %s wiremock mapping' % self.url)
+
+    def get_request_journal(self):
+        """Get the wiremock service request journal.
+
+        :raise ValueError: on failure to retrieve journal from Wiremock admin API.
+        """
+        response = requests.get(self.requests_url)
+        if response.status_code != httplib.OK:
+            raise ValueError(response.text, response.status_code)
+        response_body = json.loads(response.text)
+        return response_body["requests"]
+
+    def get_matching_requests(self, inner_url):
+        """Get all wiremock service requests of the given type (by inner URL) from  the journal.
+
+        :param inner_url: The inner URL with which to filter journal requests by matching.
+        """
+        return [request for request in self.get_request_journal() if
+                request["request"]["url"] == inner_url]
+
+    def delete_request_journal(self):
+        """Delete all entries from the service request journal."""
+        requests.delete(self.requests_url).raise_for_status()
