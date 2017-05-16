@@ -42,6 +42,9 @@ class WiremockController(object):
         :param str dir_path: directory path to scan - should contain json mapping files.
         """
         logging.debug('Setting service %s wiremock mapping using directory %s', self.url, dir_path)
+        if not os.path.isdir(dir_path):
+            raise ValueError("'%s' is not a valid dir" % dir_path)
+
         mapping_files_pattern = os.path.join(dir_path, '*.json')
         self.set_mapping_from_files(glob.iglob(mapping_files_pattern))
 

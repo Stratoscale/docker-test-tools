@@ -86,11 +86,13 @@ class TestWiremockController(unittest.TestCase):
         for test_path in test_paths:
             from_file_mock.assert_any_call(test_path)
 
+    @mock.patch('os.path.isdir')
     @mock.patch('docker_test_tools.wiremock.WiremockController.set_mapping_from_files')
-    def test_set_mapping_from_dir(self, from_files_mock):
+    def test_set_mapping_from_dir(self, from_files_mock, is_dir_mock):
         """Test 'set_mapping_from_dir' method."""
         test_paths = ['json-file-path-1', 'json-file-path-2']
         test_dir = 'some/dir'
+        is_dir_mock.return_value = True
 
         with mock.patch('glob.iglob') as glob_mock:
             glob_mock.return_value = test_paths
@@ -144,3 +146,11 @@ class TestWiremockController(unittest.TestCase):
         with mock.patch("requests.delete", mock_delete):
             self.controller.delete_request_journal()
             mock_delete.assert_called_once_with("http://mocked.service:9999/__admin/requests")
+
+    def test_set_mapping_from_non_existing_dir(self):
+        """Test 'set_mapping_from_non_existing_dir' method."""
+        test_paths = ['json-file-path-1', 'json-file-path-2']
+        test_dir = 'some/dir'
+
+        with self.assertRaises(ValueError):
+            self.controller.set_mapping_from_dir(test_dir)
