@@ -8,11 +8,15 @@ from contextlib import contextmanager
 import config
 from api_version import get_server_api_version
 
+SEPARATOR = '|'
+UNDERSCORE = '_'
+
 
 class EnvironmentController(object):
     """Utility for managing environment operations."""
 
     def __init__(self, project_name, compose_path, log_path, reuse_containers=False):
+
         self.log_path = log_path
         self.compose_path = compose_path
         self.project_name = project_name
@@ -20,6 +24,9 @@ class EnvironmentController(object):
 
         self.environment_variables = self._get_environment_variables()
         self.services = self.get_services()
+
+        self.logs_file = None
+        self.logs_process = None
 
     @classmethod
     def from_file(cls, config_path):
@@ -59,6 +66,7 @@ class EnvironmentController(object):
             logging.debug("Setting up the environment")
             self.cleanup()
             self.run_containers()
+            self.start_log_collection()
         except:
             logging.exception("Setup failure, tearing down the test environment")
             self.teardown()
@@ -71,7 +79,8 @@ class EnvironmentController(object):
         """
         logging.debug("Tearing down the environment")
         try:
-            self.get_containers_logs()
+            self.stop_log_collection()
+            self.split_logs()
         finally:
             self.cleanup()
 
@@ -95,51 +104,48 @@ class EnvironmentController(object):
                 ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'up', '--build', '-d'],
                 stderr=subprocess.STDOUT, env=self.environment_variables
             )
-
         except subprocess.CalledProcessError as error:
             raise RuntimeError("Failed running environment containers, reason: %s" % error.output)
 
-    def get_service_list(self):
-        """Returns the list of services defined in the docker-compose YAML file."""
+    def start_log_collection(self):
+        """Start a log collection process which writes docker-compose logs into a file."""
+        logging.debug("Starting logs collection from environment containers")
+        self.logs_file = open(self.log_path, 'w')
+        self.logs_process = subprocess.Popen(
+            ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'logs', '--no-color', '-f', '-t'],
+            stdout=self.logs_file, env=self.environment_variables
+        )
+
+    def stop_log_collection(self):
+        """Stop the log collection process and close the log file."""
+        logging.debug("Stopping logs collection from environment containers")
+        if self.logs_process:
+            self.logs_process.kill()
+            self.logs_process.wait()
+
+        if self.logs_file:
+            self.logs_file.close()
+
+    def split_logs(self):
+        """Split the collected docker-compose log file into a file per service.
+
+        Each line in the collected log file is in a format of: 'service.name_number  | message'
+        This method writes each line to it's service log file amd keeps only the message.
+        """
+        logging.debug("Splitting log file into separated files per service")
+        log_dir = os.path.dirname(self.log_path)
+        services_log_files = {service_name: open(os.path.join(log_dir, service_name + '.log'), 'w')
+                              for service_name in self.services}
         try:
-            text = subprocess.check_output(
-                'docker-compose -f {compose_path} config --services'.format(compose_path=self.compose_path),
-                shell=True, stderr=subprocess.STDOUT, env=self.environment_variables)
-
-        except subprocess.CalledProcessError as error:
-            raise RuntimeError("Failed getting list of services, reason: %s", error.output)
-        return text.strip().split('\n')
-
-    def _get_service_log_file_name(self, service_name=None):
-        """Returns a filename for the log of a service or of the combined log."""
-        if not service_name:
-            return self.log_path
-        log_dir, _ = os.path.split(self.log_path)
-        return os.path.join(log_dir, '{}.log'.format(service_name))
-
-    def _get_container_logs(self, service_name=None):
-        """Write the logs of a service container (or all of them) to files."""
-        log_path = self._get_service_log_file_name(service_name)
-        logging.info("Writing containers logs to %s, using docker compose: %s", log_path, self.compose_path)
-        try:
-            service_command = "{service_name} | sed 's/^[^|]*| //'".format(
-                service_name=service_name) if service_name else ''
-            subprocess.check_output(
-                'docker-compose -f {compose_path} -p {project_name} logs --no-color {service_command} > {log_path}'.format(
-                    compose_path=self.compose_path,
-                    project_name=self.project_name,
-                    log_path=log_path,
-                    service_command=service_command),
-                shell=True, stderr=subprocess.STDOUT, env=self.environment_variables
-            )
-        except subprocess.CalledProcessError as error:
-            raise RuntimeError("Failed writing environment containers log, reason: %s" % error.output)
-
-    def get_containers_logs(self):
-        """Write the logs of all service container, as well as the combined log to files."""
-        self._get_container_logs()
-        for service_name in self.get_service_list() + [None]:
-            self._get_container_logs(service_name)
+            with open(self.log_path, 'r') as combined_log_file:
+                for log_line in combined_log_file.readlines():
+                    separator_location = log_line.find(SEPARATOR)
+                    if separator_location != -1:
+                        service_name = log_line[:log_line.rfind(UNDERSCORE, 0, separator_location)]
+                        message = log_line[separator_location + 1:]
+                        services_log_files[service_name].write(message)
+        finally:
+            [services_log_file.close() for services_log_file in services_log_files.itervalues()]
 
     def remove_containers(self):
         """Remove the environment containers."""
