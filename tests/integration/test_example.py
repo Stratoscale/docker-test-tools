@@ -48,6 +48,19 @@ class ExampleTest(BaseDockerTest):
         logging.info('Validating consul container has recovered and is responsive')
         self.assertEquals(requests.get('http://consul.service:8500').status_code, httplib.OK)
 
+    def test_service_stopped(self):
+        """Validate service down scenario."""
+        logging.info('Validating consul container is responsive')
+        self.assertEquals(requests.get('http://consul.service:8500').status_code, httplib.OK)
+
+        logging.info('Validating consul container is unresponsive while in `container_stopped` context')
+        with self.controller.container_stopped(name='consul.service'):
+            with self.assertRaises(requests.ConnectionError):
+                requests.get('http://consul.service:8500')
+
+        logging.info('Validating consul container has recovered and is responsive')
+        self.assertEquals(requests.get('http://consul.service:8500').status_code, httplib.OK)
+
     def test_service_paused(self):
         """Validate service paused scenario."""
         logging.info('Validating consul container is responsive')

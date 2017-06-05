@@ -229,6 +229,36 @@ class EnvironmentController(object):
         except subprocess.CalledProcessError as error:
             raise RuntimeError("Failed unpausing container %s reason: %s" % (name, error.output))
 
+    def stop_container(self, name):
+        """Stop the container.
+
+        :param str name: container name as it appears in the docker compose file.
+        """
+        self.validate_service_name(name)
+        logging.debug("Stopping %s container", name)
+        try:
+            subprocess.check_output(
+                ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'stop', name],
+                stderr=subprocess.STDOUT, env=self.environment_variables
+            )
+        except subprocess.CalledProcessError as error:
+            raise RuntimeError("Failed stopping container %s reason: %s" % (name, error.output))
+
+    def start_container(self, name):
+        """Start the container.
+
+        :param str name: container name as it appears in the docker compose file.
+        """
+        self.validate_service_name(name)
+        logging.debug("Starting %s container", name)
+        try:
+            subprocess.check_output(
+                ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'start', name],
+                stderr=subprocess.STDOUT, env=self.environment_variables
+            )
+        except subprocess.CalledProcessError as error:
+            raise RuntimeError("Failed starting container %s reason: %s" % (name, error.output))
+
     def get_container_id(self, name):
         """Get container id by name.
 
@@ -324,7 +354,7 @@ class EnvironmentController(object):
     def container_paused(self, name, interval=1, timeout=60):
         """Container pause context manager.
 
-        pause the container within the context, once context ends un-pause the container and wait for 
+        Pause the container within the context, once context ends un-pause the container and wait for
         the service check to pass.
 
         :param str name: container name as it appears in the docker compose file.
@@ -344,6 +374,32 @@ class EnvironmentController(object):
             yield
         finally:
             self.unpause_container(name=name)
+            self.wait_for_services(services=[name, ], interval=interval, timeout=timeout)
+
+    @contextmanager
+    def container_stopped(self, name, interval=1, timeout=60):
+        """Container stopped context manager.
+
+        Stop the container within the context, once context ends start the container and wait for
+        the service check to pass.
+
+        :param str name: container name as it appears in the docker compose file.
+        :param int interval: interval (in seconds) between checks.
+        :param int timeout: timeout (in seconds) for all checks to pass.
+
+        Usage:
+
+        >>> with controller.container_stopped(name='consul'):
+        >>>     # container will be stopped in this context
+        >>>
+        >>> # container will be back up after context end
+        """
+        self.validate_service_name(name)
+        self.stop_container(name=name)
+        try:
+            yield
+        finally:
+            self.start_container(name=name)
             self.wait_for_services(services=[name, ], interval=interval, timeout=timeout)
 
     def validate_service_name(self, name):

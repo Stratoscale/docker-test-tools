@@ -94,7 +94,7 @@ class ExampleTest(BaseDockerTest):
     CHECKS_TIMEOUT = 60
 
     def setUp(self):
-        """Create a wiremock controller and add a cleanup for it."""
+        """Create a wiremock controller and ad a cleanup for it."""
         super(ExampleTest, self).setUp()
 
         self.wiremock = WiremockController(url='http://mocked.service:9999')
@@ -115,6 +115,19 @@ class ExampleTest(BaseDockerTest):
 
         logging.info('Validating consul container is unresponsive while in `container_down` context')
         with self.controller.container_down(name='consul.service'):
+            with self.assertRaises(requests.ConnectionError):
+                requests.get('http://consul.service:8500')
+
+        logging.info('Validating consul container has recovered and is responsive')
+        self.assertEquals(requests.get('http://consul.service:8500').status_code, httplib.OK)
+
+    def test_service_stopped(self):
+        """Validate service down scenario."""
+        logging.info('Validating consul container is responsive')
+        self.assertEquals(requests.get('http://consul.service:8500').status_code, httplib.OK)
+
+        logging.info('Validating consul container is unresponsive while in `container_stopped` context')
+        with self.controller.container_stopped(name='consul.service'):
             with self.assertRaises(requests.ConnectionError):
                 requests.get('http://consul.service:8500')
 
@@ -145,7 +158,6 @@ class ExampleTest(BaseDockerTest):
 
         logging.info('Validating mocked service response on `test` endpoint')
         self.assertEquals(requests.post('http://mocked.service:9999/test').status_code, httplib.OK)
-
 ```
 
 ## Integrating With `nose2`
@@ -156,16 +168,19 @@ $ CONFIG=test.cfg nose2 --config=test.cfg --verbose --project-directory .
 ```
 Outcome:
 ```
+test_mocked_service_configuration (tests.integration.test_example.ExampleTest)
 Validate wiremock service. ... ok
 test_service_down (tests.integration.test_example.ExampleTest)
 Validate service down scenario. ... ok
 test_service_paused (tests.integration.test_example.ExampleTest)
 Validate service paused scenario. ... ok
+test_service_stopped (tests.integration.test_example.ExampleTest)
+Validate service down scenario. ... ok
 test_services_sanity (tests.integration.test_example.ExampleTest)
 Validate services are responsive once the test start. ... ok
 
 ----------------------------------------------------------------------
-Ran 4 tests in 30.789s
+Ran 5 tests in 31.844s
 
 OK
 ```
@@ -202,14 +217,14 @@ Outcome:
 ```
 ==== ... ==== test session starts ==== ... ====
 platform linux2 -- Python 2.7.13, pytest-3.0.6, py-1.4.33, pluggy-0.4.0 -- /usr/local/bin/python2
-cachedir: .cache
-rootdir: /home/sarbov/work/docker-test-tools, inifile: 
-collected 4 items 
+...
+collected 5 items 
 
 tests/integration/test_example.py::ExampleTest::test_mocked_service_configuration PASSED
 tests/integration/test_example.py::ExampleTest::test_service_down PASSED
 tests/integration/test_example.py::ExampleTest::test_service_paused PASSED
+tests/integration/test_example.py::ExampleTest::test_service_stopped PASSED
 tests/integration/test_example.py::ExampleTest::test_services_sanity PASSED
 
-==== ... ==== 4 passed in 32.02 seconds ==== ... ====
+==== ... ==== 5 passed in 34.76 seconds ==== ... ====
 ```
