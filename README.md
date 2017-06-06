@@ -122,7 +122,7 @@ class ExampleTest(BaseDockerTest):
         self.assertEquals(requests.get('http://consul.service:8500').status_code, httplib.OK)
 
     def test_service_stopped(self):
-        """Validate service down scenario."""
+        """Validate service stopped scenario."""
         logging.info('Validating consul container is responsive')
         self.assertEquals(requests.get('http://consul.service:8500').status_code, httplib.OK)
 

@@ -282,14 +282,12 @@ services:
     @mock.patch('docker_test_tools.environment.EnvironmentController.kill_containers')
     @mock.patch('docker_test_tools.environment.EnvironmentController.remove_containers')
     @mock.patch('docker_test_tools.environment.EnvironmentController.stop_log_collection')
-    @mock.patch('docker_test_tools.environment.EnvironmentController.split_logs')
-    def test_teardown(self, split_logs_mock, stop_collection_mock, remove_mock, kill_mock):
+    def test_teardown(self, stop_collection_mock, remove_mock, kill_mock):
         """Validate the environment teardown method."""
         self.controller.teardown()
         kill_mock.assert_called_once_with()
         remove_mock.assert_called_once_with()
         stop_collection_mock.assert_called_once_with()
-        split_logs_mock.assert_called_once_with()
 
     @mock.patch('docker_test_tools.environment.EnvironmentController.get_services', mock.MagicMock())
     @mock.patch('docker_test_tools.environment.EnvironmentController.kill_containers')
@@ -313,8 +311,7 @@ services:
     @mock.patch('docker_test_tools.environment.EnvironmentController.kill_containers')
     @mock.patch('docker_test_tools.environment.EnvironmentController.remove_containers')
     @mock.patch('docker_test_tools.environment.EnvironmentController.stop_log_collection')
-    @mock.patch('docker_test_tools.environment.EnvironmentController.split_logs')
-    def test_teardown_with_reuse(self, split_logs_mock, stop_collection_mock, remove_mock, kill_mock):
+    def test_teardown_with_reuse(self, stop_collection_mock, remove_mock, kill_mock):
         """Validate the environment teardown method when container reuse is enabled."""
         controller = environment.EnvironmentController(compose_path=self.compose_path,
                                                        log_path=self.log_path,
@@ -324,7 +321,6 @@ services:
         kill_mock.assert_not_called()
         remove_mock.assert_not_called()
         stop_collection_mock.assert_called_once_with()
-        split_logs_mock.assert_called_once_with()
 
     def test_wait_for_services(self):
         """"Validate the environment wait_for_services method."""
@@ -335,9 +331,14 @@ services:
         with mock.patch("waiting.wait", side_effect=TimeoutExpired(timeout_seconds=1, what='something')):
             self.assertFalse(controller.wait_for_services())
 
-    def test_stop_log_collection(self):
+    @mock.patch('docker_test_tools.environment.EnvironmentController.split_logs')
+    def test_stop_log_collection(self, split_logs_mock):
         """"Validate the environment stop_log_collection method."""
         controller = self.get_controller()
+
+        controller.stop_log_collection()
+        split_logs_mock.assert_not_called()
+
         controller.logs_file = mock.MagicMock()
         controller.logs_process = mock.MagicMock()
 
@@ -346,6 +347,7 @@ services:
         controller.logs_process.kill.assert_called_once_with()
         controller.logs_process.wait.assert_called_once_with()
         controller.logs_file.close.assert_called_once_with()
+        split_logs_mock.assert_called_once_with()
 
     @mock.patch("subprocess.Popen")
     def test_start_log_collection(self, mocked_popen):

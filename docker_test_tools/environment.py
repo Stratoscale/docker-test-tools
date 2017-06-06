@@ -80,7 +80,6 @@ class EnvironmentController(object):
         logging.debug("Tearing down the environment")
         try:
             self.stop_log_collection()
-            self.split_logs()
         finally:
             self.cleanup()
 
@@ -125,6 +124,7 @@ class EnvironmentController(object):
 
         if self.logs_file:
             self.logs_file.close()
+            self.split_logs()
 
     def split_logs(self):
         """Split the collected docker-compose log file into a file per service.
@@ -133,16 +133,18 @@ class EnvironmentController(object):
         This method writes each line to it's service log file amd keeps only the message.
         """
         logging.debug("Splitting log file into separated files per service")
+        services_log_files = {}
         log_dir = os.path.dirname(self.log_path)
-        services_log_files = {service_name: open(os.path.join(log_dir, service_name + '.log'), 'w')
-                              for service_name in self.services}
         try:
             with open(self.log_path, 'r') as combined_log_file:
                 for log_line in combined_log_file.readlines():
                     separator_location = log_line.find(SEPARATOR)
                     if separator_location != -1:
-                        service_name = log_line[:log_line.rfind(UNDERSCORE, 0, separator_location)]
+                        service_name = log_line[:separator_location].strip()
                         message = log_line[separator_location + 1:]
+                        if service_name not in services_log_files:
+                            services_log_files[service_name] = open(os.path.join(log_dir, service_name + '.log'), 'w')
+
                         services_log_files[service_name].write(message)
         finally:
             [services_log_file.close() for services_log_file in services_log_files.itervalues()]
