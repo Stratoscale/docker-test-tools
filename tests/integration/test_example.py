@@ -7,15 +7,17 @@ from docker_test_tools.base_test import BaseDockerTest
 from docker_test_tools.wiremock import WiremockController
 from docker_test_tools.utils import get_curl_health_check
 
+# Define health check functions for the environment services
+consul_health_check = get_curl_health_check('consul.service', url='http://consul.service:8500')
+mock_service_health_check = get_curl_health_check('mocked.service', url='http://mocked.service:9999/__admin')
+
 
 class ExampleTest(BaseDockerTest):
     """Usage example test for docker-test-tools."""
 
     # [OPTIONAL] User defined health checks, once defined the test setUp will wait for them to pass.
-    REQUIRED_HEALTH_CHECKS = [
-        get_curl_health_check(service_name='consul.service', url='http://consul.service:8500'),
-        get_curl_health_check(service_name='mocked.service', url='http://mocked.service:9999/__admin')
-    ]
+    REQUIRED_HEALTH_CHECKS = [consul_health_check,
+                              mock_service_health_check]
 
     # [OPTIONAL] User defined health checks timeout
     CHECKS_TIMEOUT = 60
@@ -41,7 +43,7 @@ class ExampleTest(BaseDockerTest):
         self.assertEquals(requests.get('http://consul.service:8500').status_code, httplib.OK)
 
         logging.info('Validating consul container is unresponsive while in `container_down` context')
-        with self.controller.container_down(name='consul.service'):
+        with self.controller.container_down(name='consul.service', health_check=consul_health_check):
             with self.assertRaises(requests.ConnectionError):
                 requests.get('http://consul.service:8500')
 
@@ -54,7 +56,7 @@ class ExampleTest(BaseDockerTest):
         self.assertEquals(requests.get('http://consul.service:8500').status_code, httplib.OK)
 
         logging.info('Validating consul container is unresponsive while in `container_stopped` context')
-        with self.controller.container_stopped(name='consul.service'):
+        with self.controller.container_stopped(name='consul.service', health_check=consul_health_check):
             with self.assertRaises(requests.ConnectionError):
                 requests.get('http://consul.service:8500')
 
@@ -67,7 +69,7 @@ class ExampleTest(BaseDockerTest):
         self.assertEquals(requests.get('http://consul.service:8500', timeout=2).status_code, httplib.OK)
 
         logging.info('Validating consul container is unresponsive while in `container_paused` context')
-        with self.controller.container_paused(name='consul.service'):
+        with self.controller.container_paused(name='consul.service', health_check=consul_health_check):
             with self.assertRaises(requests.Timeout):
                 requests.get('http://consul.service:8500', timeout=2)
 

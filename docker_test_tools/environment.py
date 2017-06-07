@@ -9,7 +9,6 @@ import config
 from api_version import get_server_api_version
 
 SEPARATOR = '|'
-UNDERSCORE = '_'
 
 
 class EnvironmentController(object):
@@ -327,13 +326,14 @@ class EnvironmentController(object):
             return False
 
     @contextmanager
-    def container_down(self, name, interval=1, timeout=60):
+    def container_down(self, name, health_check=None, interval=1, timeout=60):
         """Container down context manager.
 
         Simulate container down scenario by killing the container within the context,
         once context ends restart the container and wait for the service check to pass.
 
         :param str name: container name as it appears in the docker compose file.
+        :param callable health_check: a callable used to determine if the service has recovered.
         :param int interval: interval (in seconds) between checks.
         :param int timeout: timeout (in seconds) for all checks to pass.
 
@@ -350,16 +350,17 @@ class EnvironmentController(object):
             yield
         finally:
             self.restart_container(name=name)
-            self.wait_for_services(services=[name, ], interval=interval, timeout=timeout)
+            self.wait_for_health(name=name, health_check=health_check, interval=interval, timeout=timeout)
 
     @contextmanager
-    def container_paused(self, name, interval=1, timeout=60):
+    def container_paused(self, name, health_check=None, interval=1, timeout=60):
         """Container pause context manager.
 
         Pause the container within the context, once context ends un-pause the container and wait for
         the service check to pass.
 
         :param str name: container name as it appears in the docker compose file.
+        :param callable health_check: a callable used to determine if the service has recovered.
         :param int interval: interval (in seconds) between checks.
         :param int timeout: timeout (in seconds) for all checks to pass.
 
@@ -376,16 +377,17 @@ class EnvironmentController(object):
             yield
         finally:
             self.unpause_container(name=name)
-            self.wait_for_services(services=[name, ], interval=interval, timeout=timeout)
+            self.wait_for_health(name=name, health_check=health_check, interval=interval, timeout=timeout)
 
     @contextmanager
-    def container_stopped(self, name, interval=1, timeout=60):
+    def container_stopped(self, name, health_check=None, interval=1, timeout=60):
         """Container stopped context manager.
 
         Stop the container within the context, once context ends start the container and wait for
         the service check to pass.
 
         :param str name: container name as it appears in the docker compose file.
+        :param callable health_check: a callable used to determine if the service has recovered.
         :param int interval: interval (in seconds) between checks.
         :param int timeout: timeout (in seconds) for all checks to pass.
 
@@ -402,7 +404,19 @@ class EnvironmentController(object):
             yield
         finally:
             self.start_container(name=name)
-            self.wait_for_services(services=[name, ], interval=interval, timeout=timeout)
+            self.wait_for_health(name=name, health_check=health_check, interval=interval, timeout=timeout)
+
+    def wait_for_health(self, name, health_check=None, interval=1, timeout=60):
+        """Container stopped context manager.
+
+        :param str name: container name as it appears in the docker compose file.
+        :param callable health_check: a callable used to determine if the service has recovered.
+        :param int interval: interval (in seconds) between checks.
+        :param int timeout: timeout (in seconds) for all checks to pass.
+        """
+        logging.debug("Waiting for %s container to be healthy", name)
+        health_check = health_check if health_check else lambda: self.is_container_ready(name)
+        waiting.wait(health_check, sleep_seconds=interval, timeout_seconds=timeout)
 
     def validate_service_name(self, name):
         if name not in self.services:
