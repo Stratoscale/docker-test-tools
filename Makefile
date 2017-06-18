@@ -14,13 +14,12 @@ test:
 
 coverage: test
 	# Create a coverage report and validate the given threshold
-	coverage html --fail-under=90 -d build/coverage
+	coverage html --fail-under=87 -d build/coverage
 
 nose2:
 	mkdir -p build/
 
 	# Run the example nose2 tests - validate the package works
-	CONFIG=tests/integration/nose2.cfg \
 	DTT_COMPOSE_PATH=$(DTT_COMPOSE_PATH) \
 	nose2 --config=tests/integration/nose2.cfg --verbose --project-directory .
 
@@ -28,7 +27,6 @@ pytest:
 	mkdir -p build/
 
 	# Run the example pytest tests - validate the package works
-	CONFIG=tests/integration/pytest.cfg \
 	DTT_COMPOSE_PATH=$(DTT_COMPOSE_PATH) \
 	pytest -v tests/integration/
 

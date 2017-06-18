@@ -57,6 +57,7 @@ Under an `[environment]` section, define:
 For example: `test.cfg` (the section may also be included in `nose2.cfg`)
 ```cfg
 [environment]
+always-on = True
 project-name = test
 reuse-containers = False
 log-path = docker-tests.log
@@ -164,9 +165,20 @@ class ExampleTest(BaseDockerTest):
 
 ## Integrating With `nose2`
 ---
+### Enable the plugin
+
+In your `nose2.cfg` file, under the `unittest` section add `docker_test_tools` to the `plugins` list.
+
+For example:
+
+```cfg
+[unittest]
+plugins = docker_test_tools.plugin
+```
+
 ### Run the tests
 ```
-$ CONFIG=test.cfg nose2 --config=test.cfg --verbose --project-directory .
+$ nose2 --config=test.cfg --verbose --project-directory .
 ```
 Outcome:
 ```
@@ -193,26 +205,29 @@ OK
 
 ```python
 """utilized by in pytest configuration."""
-import os
-
 import pytest
 
-from docker_test_tools import environment
+from docker_test_tools.environment import EnvironmentController
+
+controller = EnvironmentController.from_file(config_path='tests/integration/pytest.cfg')
 
 
 @pytest.fixture(scope="session", autouse=True)
 def global_setup_teardown():
     """This function will be executed once per testing session."""
-    controller = environment.EnvironmentController.from_file(config_path=os.environ.get('CONFIG', None))
     controller.setup()
     yield
     controller.teardown()
 
+
+def pytest_runtest_setup(item):
+    """Assign the controller as a test class member."""
+    item.parent.obj.controller = controller
 ```
 
 ### Run the Tests
 ```
-$ CONFIG=tests/pytest_example/test.cfg pytest tests/pytest_example/
+$ pytest tests/pytest_example/
 ```
 
 Outcome:
