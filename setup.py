@@ -24,7 +24,7 @@ setup(
     keywords=["Docker", "Test", "Tools"],
     install_requires=[
         "waiting==1.3.0",
-        "docker-compose==1.11.2",
+        "docker-compose==1.13.0",
         "requests-unixsocket==0.1.5"
     ],
     packages=find_packages(),
