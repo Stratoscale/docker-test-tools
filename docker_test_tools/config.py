@@ -19,7 +19,7 @@ class Config(object):
     3) Environment variables (overrides constructor variables & file configurations).
 
     Configuration file should be in the following section & options:
-    
+
         [environment]
         log-path = <docker log path>
         project-name = <compose project name>

@@ -1,9 +1,10 @@
+# pylint: disable=unused-argument
 import logging
 
 from nose2.events import Plugin
 
-from config import Config
-from environment import EnvironmentController
+from docker_test_tools.config import Config
+from docker_test_tools.environment import EnvironmentController
 
 log = logging.getLogger('nose2.plugins.docker_test_tools')
 

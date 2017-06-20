@@ -1,6 +1,6 @@
 import unittest
 
-import utils
+from docker_test_tools import utils
 
 
 class BaseDockerTest(unittest.TestCase):

@@ -5,8 +5,8 @@ import subprocess
 import waiting
 from contextlib import contextmanager
 
-import config
-from api_version import get_server_api_version
+from docker_test_tools import config
+from docker_test_tools.api_version import get_server_api_version
 
 SEPARATOR = '|'
 
@@ -146,7 +146,8 @@ class EnvironmentController(object):
 
                         services_log_files[service_name].write(message)
         finally:
-            [services_log_file.close() for services_log_file in services_log_files.itervalues()]
+            for services_log_file in services_log_files.itervalues():
+                services_log_file.close()
 
     def remove_containers(self):
         """Remove the environment containers."""

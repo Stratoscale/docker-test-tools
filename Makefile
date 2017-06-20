@@ -7,6 +7,13 @@ DTT_COMPOSE_PATH=tests/resources/docker-compose-v$(COMPOSE_FILE_VERSION).yml
 
 all: coverage nose2 pytest dist/docker-test-tools-*.tar.gz
 
+flake8:
+	flake8 docker_test_tools
+
+pylint:
+	mkdir -p build/
+	PYLINTHOME=reports/ pylint -r n docker_test_tools
+
 test:
 	# Run the unittests and create a junit-xml report
 	mkdir -p build/

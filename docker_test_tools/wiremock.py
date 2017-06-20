@@ -25,6 +25,7 @@ class WiremockController(object):
     >>> controller.set_mapping_from_dir('some/config/dir')
     >>> controller.reset_mapping()
     """
+
     def __init__(self, url):
         """Initialize the wiremock controller.
 
@@ -76,7 +77,7 @@ class WiremockController(object):
         try:
             requests.post(self.admin_mapping_url, json=json_object).raise_for_status()
         except:
-            logging.exception("Failed setting service %s wiremock mapping using json: %s",  self.url, json_object)
+            logging.exception("Failed setting service %s wiremock mapping using json: %s", self.url, json_object)
             raise WiremockError("Failed setting service %s wiremock mapping using json: %s" % (self.url, json_object))
 
     def reset_mapping(self):
