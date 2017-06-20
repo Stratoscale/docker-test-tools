@@ -1,9 +1,6 @@
 # Docker Test Tools
 The `docker-test-tools` package makes it easy to write tests that relies on docker containers environment in order to operate.
 
-#### Prerequisites
-* The project under test must be [skipper](https://github.com/Stratoscale/skipper) compatible. 
-
 #### Features
 * Manage container operation easily within the tests.
 * Setup and tear down containers environment as part of the tests run flow.
