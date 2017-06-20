@@ -1,17 +1,12 @@
 # pylint: disable=unused-argument
-import logging
-
 from nose2.events import Plugin
 
 from docker_test_tools.config import Config
 from docker_test_tools.environment import EnvironmentController
 
-log = logging.getLogger('nose2.plugins.docker_test_tools')
-
 
 class EnvironmentPlugin(Plugin):
     """Nose2 plugin, used for managing docker environment operations."""
-
     configSection = 'environment'
     commandLineSwitch = (None, 'environment', 'Enable docker test tools environment')
 

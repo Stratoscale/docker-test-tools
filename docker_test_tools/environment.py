@@ -10,6 +10,8 @@ from docker_test_tools.api_version import get_server_api_version
 
 SEPARATOR = '|'
 
+log = logging.getLogger(__name__)
+
 
 class EnvironmentController(object):
     """Utility for managing environment operations."""
@@ -44,7 +46,7 @@ class EnvironmentController(object):
 
         :return dict: of format {'service-name': check_callback}
         """
-        logging.debug("Getting environment services, using docker compose: %s", self.compose_path)
+        log.debug("Getting environment services, using docker compose: %s", self.compose_path)
         try:
             services_output = subprocess.check_output(
                 ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'config', '--services'],
@@ -62,12 +64,12 @@ class EnvironmentController(object):
         Should be called once before *all* the tests start.
         """
         try:
-            logging.debug("Setting up the environment")
+            log.debug("Setting up the environment")
             self.cleanup()
             self.run_containers()
             self.start_log_collection()
         except:
-            logging.exception("Setup failure, tearing down the test environment")
+            log.exception("Setup failure, tearing down the test environment")
             self.teardown()
             raise
 
@@ -76,7 +78,7 @@ class EnvironmentController(object):
 
         Should be called once after *all* the tests finish.
         """
-        logging.debug("Tearing down the environment")
+        log.debug("Tearing down the environment")
         try:
             self.stop_log_collection()
         finally:
@@ -88,7 +90,7 @@ class EnvironmentController(object):
         Kills and removes the environment containers.
         """
         if self.reuse_containers:
-            logging.warning("Container reuse enabled: Skipping environment cleanup")
+            log.warning("Container reuse enabled: Skipping environment cleanup")
             return
 
         self.kill_containers()
@@ -96,7 +98,7 @@ class EnvironmentController(object):
 
     def run_containers(self):
         """Run environment containers."""
-        logging.debug("Running environment containers, using docker compose: %s", self.compose_path)
+        log.debug("Running environment containers, using docker compose: %s", self.compose_path)
         try:
             subprocess.check_output(
                 ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'up', '--build', '-d'],
@@ -107,7 +109,7 @@ class EnvironmentController(object):
 
     def start_log_collection(self):
         """Start a log collection process which writes docker-compose logs into a file."""
-        logging.debug("Starting logs collection from environment containers")
+        log.debug("Starting logs collection from environment containers")
         self.logs_file = open(self.log_path, 'w')
         self.logs_process = subprocess.Popen(
             ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'logs', '--no-color', '-f', '-t'],
@@ -116,7 +118,7 @@ class EnvironmentController(object):
 
     def stop_log_collection(self):
         """Stop the log collection process and close the log file."""
-        logging.debug("Stopping logs collection from environment containers")
+        log.debug("Stopping logs collection from environment containers")
         if self.logs_process:
             self.logs_process.kill()
             self.logs_process.wait()
@@ -131,7 +133,7 @@ class EnvironmentController(object):
         Each line in the collected log file is in a format of: 'service.name_number  | message'
         This method writes each line to it's service log file amd keeps only the message.
         """
-        logging.debug("Splitting log file into separated files per service")
+        log.debug("Splitting log file into separated files per service")
         services_log_files = {}
         log_dir = os.path.dirname(self.log_path)
         try:
@@ -151,7 +153,7 @@ class EnvironmentController(object):
 
     def remove_containers(self):
         """Remove the environment containers."""
-        logging.debug("Removing environment containers, using docker compose: %s", self.compose_path)
+        log.debug("Removing environment containers, using docker compose: %s", self.compose_path)
         try:
             subprocess.check_output(
                 ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'rm', '-f'],
@@ -162,7 +164,7 @@ class EnvironmentController(object):
 
     def kill_containers(self):
         """Kill the environment containers."""
-        logging.debug("Killing environment containers, using docker compose: %s", self.compose_path)
+        log.debug("Killing environment containers, using docker compose: %s", self.compose_path)
         try:
             subprocess.check_output(
                 ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'kill'],
@@ -177,7 +179,7 @@ class EnvironmentController(object):
         :param str name: container name as it appears in the docker compose file.
         """
         self.validate_service_name(name)
-        logging.debug("Killing %s container", name)
+        log.debug("Killing %s container", name)
         try:
             subprocess.check_output(
                 ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'kill', name],
@@ -192,7 +194,7 @@ class EnvironmentController(object):
         :param str name: container name as it appears in the docker compose file.
         """
         self.validate_service_name(name)
-        logging.debug("Restarting container %s", name)
+        log.debug("Restarting container %s", name)
         try:
             subprocess.check_output(
                 ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'restart', name],
@@ -207,7 +209,7 @@ class EnvironmentController(object):
         :param str name: container name as it appears in the docker compose file.
         """
         self.validate_service_name(name)
-        logging.debug("Pausing %s container", name)
+        log.debug("Pausing %s container", name)
         try:
             subprocess.check_output(
                 ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'pause', name],
@@ -222,7 +224,7 @@ class EnvironmentController(object):
         :param str name: container name as it appears in the docker compose file.
         """
         self.validate_service_name(name)
-        logging.debug("Unpausing %s container", name)
+        log.debug("Unpausing %s container", name)
         try:
             subprocess.check_output(
                 ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'unpause', name],
@@ -237,7 +239,7 @@ class EnvironmentController(object):
         :param str name: container name as it appears in the docker compose file.
         """
         self.validate_service_name(name)
-        logging.debug("Stopping %s container", name)
+        log.debug("Stopping %s container", name)
         try:
             subprocess.check_output(
                 ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'stop', name],
@@ -252,7 +254,7 @@ class EnvironmentController(object):
         :param str name: container name as it appears in the docker compose file.
         """
         self.validate_service_name(name)
-        logging.debug("Starting %s container", name)
+        log.debug("Starting %s container", name)
         try:
             subprocess.check_output(
                 ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'start', name],
@@ -284,7 +286,7 @@ class EnvironmentController(object):
         :param str name: container name as it appears in the docker compose file.
         """
         self.validate_service_name(name)
-        logging.debug("Getting %s container state", name)
+        log.debug("Getting %s container state", name)
         container_id = self.get_container_id(name)
         try:
             status_output = subprocess.check_output(
@@ -293,7 +295,7 @@ class EnvironmentController(object):
             )
 
         except subprocess.CalledProcessError as error:
-            logging.warning("Failed getting container %s state, reason: %s", name, error.output)
+            log.warning("Failed getting container %s state, reason: %s", name, error.output)
             return False
 
         if '"Health":' in status_output:
@@ -301,7 +303,7 @@ class EnvironmentController(object):
         else:
             is_ready = '"Status":"running"' in status_output
 
-        logging.debug("Container %s ready: %s", name, is_ready)
+        log.debug("Container %s ready: %s", name, is_ready)
         return is_ready
 
     def wait_for_services(self, services=None, interval=1, timeout=60):
@@ -311,7 +313,7 @@ class EnvironmentController(object):
         If it doesn't the method will wait for a 'running' state.
         """
         services = services if services else self.services
-        logging.info('Waiting for %s to reach the required state', services)
+        log.info('Waiting for %s to reach the required state', services)
 
         def service_checks():
             """Return True if services checks pass."""
@@ -319,11 +321,11 @@ class EnvironmentController(object):
 
         try:
             waiting.wait(service_checks, sleep_seconds=interval, timeout_seconds=timeout)
-            logging.info('Services %s reached the required state', services)
+            log.info('Services %s reached the required state', services)
             return True
 
         except waiting.TimeoutExpired:
-            logging.error('%s failed to to reach the required state', services)
+            log.error('%s failed to to reach the required state', services)
             return False
 
     @contextmanager
@@ -415,7 +417,7 @@ class EnvironmentController(object):
         :param int interval: interval (in seconds) between checks.
         :param int timeout: timeout (in seconds) for all checks to pass.
         """
-        logging.debug("Waiting for %s container to be healthy", name)
+        log.debug("Waiting for %s container to be healthy", name)
         health_check = health_check if health_check else lambda: self.is_container_ready(name)
         waiting.wait(health_check, sleep_seconds=interval, timeout_seconds=timeout)
 
@@ -427,7 +429,7 @@ class EnvironmentController(object):
     def _get_environment_variables():
         """Set the compose api version according to the server's api version"""
         server_api_version = get_server_api_version()
-        logging.debug("docker server api version is %s, updating environment_variables", server_api_version)
+        log.debug("docker server api version is %s, updating environment_variables", server_api_version)
         env = os.environ.copy()
         env['COMPOSE_API_VERSION'] = env['DOCKER_API_VERSION'] = server_api_version
         return env

@@ -4,6 +4,9 @@ import subprocess
 import waiting
 
 
+log = logging.getLogger(__name__)
+
+
 def run_health_checks(checks, interval=1, timeout=60):
     """Return True if all health checks pass (return True).
 
@@ -13,7 +16,7 @@ def run_health_checks(checks, interval=1, timeout=60):
 
     :raise bool: True is all the services are healthy, False otherwise.
     """
-    logging.info('Waiting for the required health checks to pass...')
+    log.info('Waiting for the required health checks to pass...')
     try:
         waiting.wait(lambda: all([health_check() for health_check in checks]),
                      sleep_seconds=interval, timeout_seconds=timeout)
@@ -21,7 +24,7 @@ def run_health_checks(checks, interval=1, timeout=60):
         return True
 
     except waiting.TimeoutExpired:
-        logging.error("Required health checks didn't pass within timeout")
+        log.error("Required health checks didn't pass within timeout")
         return False
 
 
@@ -42,12 +45,12 @@ def get_curl_health_check(service_name, url):
 
     :return function: function used to determine if the given service is responsive.
     """
-    logging.debug('Defining a CURL based health check for service: %s at: %s', service_name, url)
+    log.debug('Defining a CURL based health check for service: %s at: %s', service_name, url)
 
     def curl_health_check():
         """Return True if the service is responsive."""
         is_ready = is_curl_responsive(url)
-        logging.debug('Service %s ready: %s', service_name, is_ready)
+        log.debug('Service %s ready: %s', service_name, is_ready)
         return is_ready
 
     return curl_health_check

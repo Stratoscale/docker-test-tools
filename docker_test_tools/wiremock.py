@@ -10,6 +10,8 @@ import logging
 
 import requests
 
+log = logging.getLogger(__name__)
+
 
 class WiremockError(Exception):
     """Raised on wiremock controller failures."""
@@ -42,7 +44,7 @@ class WiremockController(object):
 
         :param str dir_path: directory path to scan - should contain json mapping files.
         """
-        logging.debug('Setting service %s wiremock mapping using directory %s', self.url, dir_path)
+        log.debug('Setting service %s wiremock mapping using directory %s', self.url, dir_path)
         if not os.path.isdir(dir_path):
             raise ValueError("'%s' is not a valid dir" % dir_path)
 
@@ -62,7 +64,7 @@ class WiremockController(object):
 
         :param str json_path: json stub file path.
         """
-        logging.debug('Setting service %s wiremock mapping using file %s', self.url, json_path)
+        log.debug('Setting service %s wiremock mapping using file %s', self.url, json_path)
         with open(json_path, 'r') as json_file:
             json_object = json.load(json_file)
         self.set_mapping_from_json(json_object)
@@ -73,11 +75,11 @@ class WiremockController(object):
         :param json_object: json data of mapping stub.
         :raise WiremockError: on failure to configure service.
         """
-        logging.debug('Setting service %s wiremock mapping using json: %s', self.url, json_object)
+        log.debug('Setting service %s wiremock mapping using json: %s', self.url, json_object)
         try:
             requests.post(self.admin_mapping_url, json=json_object).raise_for_status()
         except:
-            logging.exception("Failed setting service %s wiremock mapping using json: %s", self.url, json_object)
+            log.exception("Failed setting service %s wiremock mapping using json: %s", self.url, json_object)
             raise WiremockError("Failed setting service %s wiremock mapping using json: %s" % (self.url, json_object))
 
     def reset_mapping(self):
@@ -85,11 +87,11 @@ class WiremockController(object):
 
         :raise WiremockError: on failure to reset service mapping.
         """
-        logging.debug('Resetting %s wiremock mapping', self.url)
+        log.debug('Resetting %s wiremock mapping', self.url)
         try:
             requests.post(self.mapping_reset_url).raise_for_status()
         except:
-            logging.exception('Failed resetting %s wiremock mapping', self.url)
+            log.exception('Failed resetting %s wiremock mapping', self.url)
             raise WiremockError('Failed resetting %s wiremock mapping' % self.url)
 
     def get_request_journal(self):
