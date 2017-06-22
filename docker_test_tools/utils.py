@@ -1,8 +1,7 @@
 import logging
-import subprocess
-
+import httplib
 import waiting
-
+import requests
 
 log = logging.getLogger(__name__)
 
@@ -28,29 +27,38 @@ def run_health_checks(checks, interval=1, timeout=60):
         return False
 
 
-def is_curl_responsive(address):
-    """Return True if the address is responsive using curl.
+def is_responsive(address, expected_status=httplib.OK):
+    """Return True if the address is responsive.
 
     :param string address: url address 'hostname:port'.
+    :param int expected_status: expected response status code.
     :return bool: True is the address is responsive, False otherwise.
     """
-    return subprocess.call(['curl', '-s', address], stdout=subprocess.PIPE, stderr=subprocess.PIPE) == 0
+    try:
+        return requests.get(address, timeout=5).status_code == expected_status
+    except:
+        return False
 
 
-def get_curl_health_check(service_name, url):
+def get_health_check(service_name, url, expected_status=httplib.OK):
     """Return a function used to determine if the given service is responsive.
 
     :param string service_name: service name.
     :param string url: service url 'hostname:port'.
+    :param int expected_status: expected response status code.
 
     :return function: function used to determine if the given service is responsive.
     """
     log.debug('Defining a CURL based health check for service: %s at: %s', service_name, url)
 
-    def curl_health_check():
+    def url_health_check():
         """Return True if the service is responsive."""
-        is_ready = is_curl_responsive(url)
+        is_ready = is_responsive(url, expected_status)
         log.debug('Service %s ready: %s', service_name, is_ready)
         return is_ready
 
-    return curl_health_check
+    return url_health_check
+
+
+# For backward compatability
+get_curl_health_check = get_health_check

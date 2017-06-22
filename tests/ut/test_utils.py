@@ -1,21 +1,21 @@
 import mock
 import unittest
-import subprocess
 
 from waiting import TimeoutExpired
 from docker_test_tools import utils
 
 
 class TestUtils(unittest.TestCase):
-    @mock.patch('subprocess.call')
-    def test_run_health_checks(self, call_mock):
+    @mock.patch('requests.get')
+    def test_run_health_checks(self, get_mock):
         """Validate the run_health_checks function."""
-        call_mock.return_value = 0
+        get_mock.return_value = mock.MagicMock(status_code=200)
         utils.run_health_checks([utils.get_curl_health_check('service1', 'first_url'),
-                                 utils.get_curl_health_check('service2', 'second_url')])
+                                 utils.get_curl_health_check('service2', 'second_url')],
+                                timeout=5)
 
-        call_mock.assert_any_call(['curl', '-s', 'first_url'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        call_mock.assert_any_call(['curl', '-s', 'second_url'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        get_mock.assert_any_call('first_url', timeout=5)
+        get_mock.assert_any_call('second_url', timeout=5)
 
         with mock.patch("waiting.wait", return_value=True):
             self.assertTrue(utils.run_health_checks([]))
