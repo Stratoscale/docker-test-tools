@@ -60,5 +60,5 @@ def get_health_check(service_name, url, expected_status=httplib.OK):
     return url_health_check
 
 
-# For backward compatibility
+# For backward compatability
 get_curl_health_check = get_health_check

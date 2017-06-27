@@ -41,10 +41,6 @@ dist/docker-test-tools-*.tar.gz:
 	# Create the source distribution
 	python setup.py sdist
 
-README.rst: README.md
-	# Convert readme .md to .rst
-	pandoc --from=markdown --to=rst README.md -o README.rst
-
 clean:
 	# Clean any generated files
 	rm -rf build dist docker_test_tools.egg-info .coverage .cache

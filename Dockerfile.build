@@ -1,9 +1,5 @@
 FROM python:2.7
 
-# Install pandoc - required to convert readme .md to .rst
-RUN wget https://github.com/jgm/pandoc/releases/download/1.15.1/pandoc-1.15.1-1-amd64.deb
-RUN dpkg -i pandoc-1.15.1-1-amd64.deb
-
 # Install Docker
 ENV DOCKER_CONFIG=/tmp/
 RUN curl https://get.docker.com/builds/Linux/x86_64/docker-latest.tgz | tar xz -C /tmp/ \
