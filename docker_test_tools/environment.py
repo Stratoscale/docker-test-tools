@@ -56,7 +56,7 @@ class EnvironmentController(object):
         except subprocess.CalledProcessError as error:
             raise RuntimeError("Failed getting environment services, reason: %s" % error.output)
 
-        return services_output.strip().split('\n')
+        return self._to_str(services_output).strip().split('\n')
 
     def setup(self):
         """Sets up the environment using docker commands.
@@ -148,7 +148,7 @@ class EnvironmentController(object):
 
                         services_log_files[service_name].write(message)
         finally:
-            for services_log_file in services_log_files.itervalues():
+            for services_log_file in services_log_files.values():
                 services_log_file.close()
 
     def remove_containers(self):
@@ -270,12 +270,14 @@ class EnvironmentController(object):
         """
         self.validate_service_name(name)
         try:
-            return subprocess.check_output(
+            output = subprocess.check_output(
                 ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'ps', '-q', name],
                 stderr=subprocess.STDOUT, env=self.environment_variables
             )
         except subprocess.CalledProcessError as error:
             raise RuntimeError("Failed getting container %s id, reason: %s" % (name, error.output))
+
+        return self._to_str(output)
 
     def is_container_ready(self, name):
         """"Return True if the container is in ready state.
@@ -298,6 +300,7 @@ class EnvironmentController(object):
             log.warning("Failed getting container %s state, reason: %s", name, error.output)
             return False
 
+        status_output = self._to_str(status_output)
         if '"Health":' in status_output:
             is_ready = '"Status":"healthy"' in status_output
         else:
@@ -433,3 +436,18 @@ class EnvironmentController(object):
         env = os.environ.copy()
         env['COMPOSE_API_VERSION'] = env['DOCKER_API_VERSION'] = server_api_version
         return env
+
+    @staticmethod
+    def _to_str(value):
+        """
+        For each value, return the value as string
+        For python3 compatibility
+        """
+
+        if isinstance(value, str):
+            return value
+
+        if isinstance(value, bytes):
+            return value.decode('utf-8')
+
+        raise Exception("Type {} was not converted to string".format(type(value)))

@@ -1,5 +1,5 @@
 import logging
-import httplib
+from six.moves import http_client
 import waiting
 import requests
 
@@ -27,7 +27,7 @@ def run_health_checks(checks, interval=1, timeout=60):
         return False
 
 
-def is_responsive(address, expected_status=httplib.OK):
+def is_responsive(address, expected_status=http_client.OK):
     """Return True if the address is responsive.
 
     :param string address: url address 'hostname:port'.
@@ -40,7 +40,7 @@ def is_responsive(address, expected_status=httplib.OK):
         return False
 
 
-def get_health_check(service_name, url, expected_status=httplib.OK):
+def get_health_check(service_name, url, expected_status=http_client.OK):
     """Return a function used to determine if the given service is responsive.
 
     :param string service_name: service name.

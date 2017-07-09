@@ -4,7 +4,7 @@ import shutil
 import tempfile
 import unittest
 
-import ConfigParser
+from six.moves import configparser
 
 from docker_test_tools.config import Config
 
@@ -84,19 +84,19 @@ class TestConfig(unittest.TestCase):
     def test_bad_section_name(self):
         """Try parsing an invalid config file path and validate operation failure."""
         test_config_path = self.create_config_file(config_input={}, section='bad')
-        with self.assertRaises(ConfigParser.NoSectionError):
+        with self.assertRaises(configparser.NoSectionError):
             Config(config_path=test_config_path)
 
     def create_config_file(self, config_input, section='environment'):
         """Create a config file based on the given dictionary."""
         test_config_path = os.path.join(self.test_dir, 'test.txt')
 
-        parser = ConfigParser.ConfigParser()
+        parser = configparser.ConfigParser()
 
         with open(test_config_path, 'w') as cfgfile:
             parser.add_section(section)
-            for option, value in config_input.iteritems():
-                parser.set(section, option, value)
+            for option, value in config_input.items():
+                parser.set(section, option, str(value))
             parser.write(cfgfile)
 
         return test_config_path

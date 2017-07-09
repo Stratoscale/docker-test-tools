@@ -1,5 +1,5 @@
 import os
-import ConfigParser
+from six.moves import configparser
 
 
 class Config(object):
@@ -87,7 +87,7 @@ class Config(object):
         if not os.path.exists(config_path):
             raise RuntimeError("Invalid configuration path: %s" % config_path)
 
-        config_reader = ConfigParser.ConfigParser()
+        config_reader = configparser.ConfigParser()
         config_reader.read(config_path)
         read_options = config_reader.options(self.SECTION_NAME)
 

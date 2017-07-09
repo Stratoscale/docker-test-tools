@@ -5,7 +5,7 @@ For more info about wiremock visit: http://wiremock.org
 import os
 import json
 import glob
-import httplib
+from six.moves import http_client
 import logging
 
 import requests
@@ -100,7 +100,7 @@ class WiremockController(object):
         :raise ValueError: on failure to retrieve journal from Wiremock admin API.
         """
         response = requests.get(self.requests_url)
-        if response.status_code != httplib.OK:
+        if response.status_code != http_client.OK:
             raise ValueError(response.text, response.status_code)
         response_body = json.loads(response.text)
         return response_body["requests"]

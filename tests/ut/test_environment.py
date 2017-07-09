@@ -2,6 +2,7 @@ import os
 import mock
 import unittest
 import subprocess
+from six.moves import builtins
 
 from waiting import TimeoutExpired
 from docker_test_tools import environment
@@ -74,6 +75,7 @@ services:
             stderr=subprocess.STDOUT, env=self.ENVIRONMENT_VARIABLES
         )
 
+        mocked_check_output.return_value = "DOCKER_SERVICE"
         self.controller.get_container_id(service_name)
         mocked_check_output.assert_called_with(
             ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'ps', '-q', service_name],
@@ -353,7 +355,7 @@ services:
     def test_start_log_collection(self, mocked_popen):
         """"Validate the environment start_log_collection method."""
         controller = self.get_controller()
-        with mock.patch("__builtin__.open", mock.mock_open()):
+        with mock.patch("{}.open".format(builtins.__name__), mock.mock_open()):
             controller.start_log_collection()
 
         mocked_popen.assert_called_with(

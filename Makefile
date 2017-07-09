@@ -2,7 +2,7 @@
 
 # Get docker api version and set the compose file version accordingly
 DOCKER_API_VERSION = $(shell python docker_test_tools/api_version.py)
-COMPOSE_FILE_VERSION = $(shell python -c 'print "2.1" if $(DOCKER_API_VERSION) >= "1.24" else "2"')
+COMPOSE_FILE_VERSION = $(shell python -c 'print("2.1" if "$(DOCKER_API_VERSION)" >= "1.24" else "2")')
 DTT_COMPOSE_PATH=tests/resources/docker-compose-v$(COMPOSE_FILE_VERSION).yml
 
 all: coverage nose2 pytest dist/docker-test-tools-*.tar.gz

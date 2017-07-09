@@ -1,5 +1,5 @@
 import mock
-import httplib
+from six.moves import http_client
 import unittest
 
 from docker_test_tools import wiremock
@@ -104,7 +104,7 @@ class TestWiremockController(unittest.TestCase):
         """Test 'get_request_journal' method."""
 
         mock_response = mock.Mock()
-        mock_response.status_code = httplib.OK
+        mock_response.status_code = http_client.OK
         mock_response.text = self.journal_json
         mock_get = mock.Mock(return_value=mock_response)
 
@@ -118,7 +118,7 @@ class TestWiremockController(unittest.TestCase):
         """Test HTTP error while getting request journal."""
 
         mock_response = mock.Mock()
-        mock_response.status_code = httplib.NOT_FOUND
+        mock_response.status_code = http_client.NOT_FOUND
         mock_get = mock.Mock(return_value=mock_response)
 
         with mock.patch("requests.get", mock_get):
@@ -128,7 +128,7 @@ class TestWiremockController(unittest.TestCase):
         """Test 'get_matching_requests' method."""
 
         mock_response = mock.Mock()
-        mock_response.status_code = httplib.OK
+        mock_response.status_code = http_client.OK
         mock_response.text = self.journal_json
         mock_get = mock.Mock(return_value=mock_response)
 

@@ -8,4 +8,4 @@ def get_server_api_version():
     return server_versions['ApiVersion']
 
 if __name__ == '__main__':
-    print get_server_api_version()
+    print(get_server_api_version())
