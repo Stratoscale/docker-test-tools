@@ -15,7 +15,7 @@ class BaseDockerTest(unittest.TestCase):
     * REQUIRED_HEALTH_CHECKS: Define the health checks (callables) to pass up before the test starts running.
     """
     # Override this value to define the timeout (in seconds) for the required checks to pass.
-    CHECKS_TIMEOUT = 60
+    CHECKS_TIMEOUT = 120
 
     # Override this value to define the interval (in seconds) for sampling required checks to pass.
     CHECKS_INTERVAL = 1
