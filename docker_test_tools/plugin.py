@@ -31,8 +31,20 @@ class EnvironmentPlugin(Plugin):
         self.controller.setup()
 
     def startTest(self, event):
-        """Assign the controller object to the test."""
+        """Run on test start.
+
+        - Assign the controller object to the test.
+        - Write a test started log message to the main log file.
+        """
         event.test.controller = self.controller
+        self.controller.write_common_log_message("TEST STARTED: {test_id}".format(test_id=event.test.id()))
+
+    def stopTest(self, event):
+        """"Run on test stop.
+
+        - Write a test ended log message to the main log file.
+        """
+        self.controller.write_common_log_message("TEST ENDED: {test_id}".format(test_id=event.test.id()))
 
     def stopTestRun(self, event):
         """Tears down the environment using docker commands."""

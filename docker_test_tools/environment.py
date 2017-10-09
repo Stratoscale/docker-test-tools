@@ -9,6 +9,7 @@ from docker_test_tools import config
 from docker_test_tools.api_version import get_server_api_version
 
 SEPARATOR = '|'
+COMMON_LOG_PREFIX = '>>>'
 
 log = logging.getLogger(__name__)
 
@@ -139,14 +140,27 @@ class EnvironmentController(object):
         try:
             with open(self.log_path, 'r') as combined_log_file:
                 for log_line in combined_log_file.readlines():
-                    separator_location = log_line.find(SEPARATOR)
-                    if separator_location != -1:
-                        service_name = log_line[:separator_location].strip()
-                        message = log_line[separator_location + 1:]
-                        if service_name not in services_log_files:
-                            services_log_files[service_name] = open(os.path.join(log_dir, service_name + '.log'), 'w')
 
-                        services_log_files[service_name].write(message)
+                    # Write common log lines to all log files
+                    if log_line.startswith(COMMON_LOG_PREFIX):
+                        for services_log_file in services_log_files.values():
+                            services_log_file.write("\n{log_line}\n".format(log_line=log_line))
+
+                    else:
+                        # Write each log message to the appropriate log file (by prefix)
+                        separator_location = log_line.find(SEPARATOR)
+                        if separator_location != -1:
+
+                            # split service name from log message
+                            service_name = log_line[:separator_location].strip()
+                            message = log_line[separator_location + 1:]
+
+                            # Create a log file if one doesn't exists
+                            if service_name not in services_log_files:
+                                services_log_files[service_name] = \
+                                    open(os.path.join(log_dir, service_name + '.log'), 'w')
+
+                            services_log_files[service_name].write(message)
         finally:
             for services_log_file in services_log_files.values():
                 services_log_file.close()
@@ -436,6 +450,10 @@ class EnvironmentController(object):
         env = os.environ.copy()
         env['COMPOSE_API_VERSION'] = env['DOCKER_API_VERSION'] = server_api_version
         return env
+
+    def write_common_log_message(self, message):
+        self.logs_file.write('\n{prefix} {message}\n\n'.format(prefix=COMMON_LOG_PREFIX, message=message))
+        self.logs_file.flush()
 
     @staticmethod
     def _to_str(value):
