@@ -294,27 +294,15 @@ class EnvironmentController(object):
         return self._to_str(output)
 
     def is_container_ready(self, name):
-        """"Return True if the container is in ready state.
+        """Return True if the container is in ready state.
 
         If a health check is defined, a healthy container will be considered as ready.
         If no health check is defined, a running container will be considered as ready.
 
         :param str name: container name as it appears in the docker compose file.
         """
-        self.validate_service_name(name)
-        log.debug("Getting %s container state", name)
-        container_id = self.get_container_id(name)
-        try:
-            status_output = subprocess.check_output(
-                r"docker inspect --format='{{json .State}}' " + container_id,
-                shell=True, stderr=subprocess.STDOUT, env=self.environment_variables
-            )
+        status_output = self._inspect(name, format='{{json .State}}')
 
-        except subprocess.CalledProcessError as error:
-            log.warning("Failed getting container %s state, reason: %s", name, error.output)
-            return False
-
-        status_output = self._to_str(status_output)
         if '"Health":' in status_output:
             is_ready = '"Status":"healthy"' in status_output
         else:
@@ -322,6 +310,13 @@ class EnvironmentController(object):
 
         log.debug("Container %s ready: %s", name, is_ready)
         return is_ready
+
+    def container_status(self, name):
+        """Returns container status
+
+        :param str name: container name as it appears in the docker compose file.
+        """
+        return self._inspect(name, '{{json .State.Status}}')
 
     def wait_for_services(self, services=None, interval=1, timeout=60):
         """Wait for the services checks to pass.
@@ -454,6 +449,27 @@ class EnvironmentController(object):
     def write_common_log_message(self, message):
         self.logs_file.write('\n{prefix} {message}\n\n'.format(prefix=COMMON_LOG_PREFIX, message=message))
         self.logs_file.flush()
+
+    def _inspect(self, name, format='{{json}}'):
+        """
+        Returns the inspect content of a container
+        :param name: name of container
+        :param format: format of inspect output
+        """
+        self.validate_service_name(name)
+        log.debug("Getting %s container state", name)
+        container_id = self.get_container_id(name)
+        try:
+            inspect_output = subprocess.check_output(
+                r"docker inspect --format='{}' {}".format(format, container_id),
+                shell=True, stderr=subprocess.STDOUT, env=self.environment_variables
+            )
+
+        except subprocess.CalledProcessError as error:
+            logging.warning("Failed getting container %s state, reason: %s", name, error.output)
+            return ''
+
+        return self._to_str(inspect_output).strip('"\n')
 
     @staticmethod
     def _to_str(value):

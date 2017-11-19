@@ -23,10 +23,14 @@ class BaseDockerTest(unittest.TestCase):
     # Override this value to define the health checks (callables) to pass up before the test starts running.
     REQUIRED_HEALTH_CHECKS = []
 
+    # run a wait for services in the beginning of each test
+    WAIT_FOR_SERVICES = True
+
     def setUp(self):
-        # Wait for docker inspection on the services to pass
-        self.assertTrue(self.controller.wait_for_services(interval=self.CHECKS_INTERVAL, timeout=self.CHECKS_TIMEOUT),
-                        "Required checks didn't pass within timeout")
+        if self.WAIT_FOR_SERVICES:
+            # Wait for docker inspection on the services to pass
+            self.assertTrue(self.controller.wait_for_services(interval=self.CHECKS_INTERVAL, timeout=self.CHECKS_TIMEOUT),
+                            "Required checks didn't pass within timeout")
 
         if self.REQUIRED_HEALTH_CHECKS:
             # Wait for user defined health checks to pass
