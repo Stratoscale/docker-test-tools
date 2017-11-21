@@ -102,7 +102,7 @@ class EnvironmentController(object):
         log.debug("Running environment containers, using docker compose: %s", self.compose_path)
         try:
             subprocess.check_output(
-                ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'up', '--build', '-d'],
+                ['docker-compose', '-f', self.compose_path, '--verbose', '-p', self.project_name, 'up', '--build', '-d'],
                 stderr=subprocess.STDOUT, env=self.environment_variables
             )
         except subprocess.CalledProcessError as error:
