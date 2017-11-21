@@ -41,7 +41,7 @@ services:
         """Validate environment controller general methods behave as expected."""
         self.controller.run_containers()
         mocked_check_output.assert_called_with(
-            ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'up', '--build', '-d'],
+            ['docker-compose', '-f', self.compose_path, '--verbose', '-p', self.project_name, 'up', '--build', '-d'],
             stderr=subprocess.STDOUT, env=self.ENVIRONMENT_VARIABLES
         )
 
