@@ -27,6 +27,7 @@ class EnvironmentController(object):
         self.environment_variables = self._get_environment_variables()
         self.services = self.get_services()
 
+        self.encoding = self.environment_variables.get('PYTHONIOENCODING', 'ascii')
         self.logs_file = None
         self.logs_process = None
 
@@ -138,7 +139,7 @@ class EnvironmentController(object):
         services_log_files = {}
         log_dir = os.path.dirname(self.log_path)
         try:
-            with open(self.log_path, 'r') as combined_log_file:
+            with open(self.log_path, 'r', self.encoding) as combined_log_file:
                 for log_line in combined_log_file.readlines():
 
                     # Write common log lines to all log files
