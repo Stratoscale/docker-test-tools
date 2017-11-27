@@ -1,3 +1,4 @@
+import io
 import os
 import logging
 import subprocess
@@ -139,7 +140,7 @@ class EnvironmentController(object):
         services_log_files = {}
         log_dir = os.path.dirname(self.log_path)
         try:
-            with open(self.log_path, 'r', self.encoding) as combined_log_file:
+            with io.open(self.log_path, 'r', encoding=self.encoding) as combined_log_file:
                 for log_line in combined_log_file.readlines():
 
                     # Write common log lines to all log files
