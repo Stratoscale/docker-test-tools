@@ -113,7 +113,7 @@ class EnvironmentController(object):
     def start_log_collection(self):
         """Start a log collection process which writes docker-compose logs into a file."""
         log.debug("Starting logs collection from environment containers")
-        self.logs_file = open(self.log_path, 'w')
+        self.logs_file = io.open(self.log_path, 'w', encoding=self.encoding)
         self.logs_process = subprocess.Popen(
             ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'logs', '--no-color', '-f', '-t'],
             stdout=self.logs_file, env=self.environment_variables
@@ -146,7 +146,7 @@ class EnvironmentController(object):
                     # Write common log lines to all log files
                     if log_line.startswith(COMMON_LOG_PREFIX):
                         for services_log_file in services_log_files.values():
-                            services_log_file.write("\n{log_line}\n".format(log_line=log_line))
+                            services_log_file.write(u"\n{log_line}\n".format(log_line=log_line))
 
                     else:
                         # Write each log message to the appropriate log file (by prefix)
@@ -160,7 +160,7 @@ class EnvironmentController(object):
                             # Create a log file if one doesn't exists
                             if service_name not in services_log_files:
                                 services_log_files[service_name] = \
-                                    open(os.path.join(log_dir, service_name + '.log'), 'w')
+                                    io.open(os.path.join(log_dir, service_name + '.log'), 'w', encoding=self.encoding)
 
                             services_log_files[service_name].write(message)
         finally:
@@ -449,7 +449,7 @@ class EnvironmentController(object):
         return env
 
     def write_common_log_message(self, message):
-        self.logs_file.write('\n{prefix} {message}\n\n'.format(prefix=COMMON_LOG_PREFIX, message=message))
+        self.logs_file.write(u'\n{prefix} {message}\n\n'.format(prefix=COMMON_LOG_PREFIX, message=message))
         self.logs_file.flush()
 
     def _inspect(self, name, format='{{json}}'):
