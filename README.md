@@ -93,8 +93,11 @@ class ExampleTest(BaseDockerTest):
     # [OPTIONAL] User defined health checks timeout
     CHECKS_TIMEOUT = 60
 
+    # [OPTIONAL] Enable containers stats collection
+    COLLECT_STATS = True
+
     def setUp(self):
-        """Create a wiremock controller and ad a cleanup for it."""
+        """Create a wiremock controller and add a cleanup for it."""
         super(ExampleTest, self).setUp()
 
         self.wiremock = WiremockController(url='http://mocked.service:9999')

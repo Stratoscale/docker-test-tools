@@ -26,6 +26,7 @@ class EnvironmentController(object):
         self.services = self.get_services()
 
         self.encoding = self.environment_variables.get('PYTHONIOENCODING', 'ascii')
+        self.work_dir = os.path.dirname(self.log_path)
         self.logs_collector = logs.LogCollector(
             log_path=log_path,
             encoding=self.encoding,
