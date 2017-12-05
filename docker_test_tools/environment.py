@@ -1,4 +1,3 @@
-import io
 import os
 import logging
 import subprocess
@@ -6,11 +5,9 @@ import subprocess
 import waiting
 from contextlib import contextmanager
 
+from docker_test_tools import logs
 from docker_test_tools import config
 from docker_test_tools.api_version import get_server_api_version
-
-SEPARATOR = '|'
-COMMON_LOG_PREFIX = '>>>'
 
 log = logging.getLogger(__name__)
 
@@ -29,8 +26,13 @@ class EnvironmentController(object):
         self.services = self.get_services()
 
         self.encoding = self.environment_variables.get('PYTHONIOENCODING', 'ascii')
-        self.logs_file = None
-        self.logs_process = None
+        self.logs_collector = logs.LogCollector(
+            log_path=log_path,
+            encoding=self.encoding,
+            project_name=project_name,
+            compose_path=compose_path,
+            environment_variables=self.environment_variables,
+        )
 
     @classmethod
     def from_file(cls, config_path):
@@ -70,7 +72,7 @@ class EnvironmentController(object):
             log.debug("Setting up the environment")
             self.cleanup()
             self.run_containers()
-            self.start_log_collection()
+            self.logs_collector.start()
         except:
             log.exception("Setup failure, tearing down the test environment")
             self.teardown()
@@ -83,7 +85,7 @@ class EnvironmentController(object):
         """
         log.debug("Tearing down the environment")
         try:
-            self.stop_log_collection()
+            self.logs_collector.stop()
         finally:
             self.cleanup()
 
@@ -109,63 +111,6 @@ class EnvironmentController(object):
             )
         except subprocess.CalledProcessError as error:
             raise RuntimeError("Failed running environment containers, reason: %s" % error.output)
-
-    def start_log_collection(self):
-        """Start a log collection process which writes docker-compose logs into a file."""
-        log.debug("Starting logs collection from environment containers")
-        self.logs_file = io.open(self.log_path, 'w', encoding=self.encoding)
-        self.logs_process = subprocess.Popen(
-            ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'logs', '--no-color', '-f', '-t'],
-            stdout=self.logs_file, env=self.environment_variables
-        )
-
-    def stop_log_collection(self):
-        """Stop the log collection process and close the log file."""
-        log.debug("Stopping logs collection from environment containers")
-        if self.logs_process:
-            self.logs_process.kill()
-            self.logs_process.wait()
-
-        if self.logs_file:
-            self.logs_file.close()
-            self.split_logs()
-
-    def split_logs(self):
-        """Split the collected docker-compose log file into a file per service.
-
-        Each line in the collected log file is in a format of: 'service.name_number  | message'
-        This method writes each line to it's service log file amd keeps only the message.
-        """
-        log.debug("Splitting log file into separated files per service")
-        services_log_files = {}
-        log_dir = os.path.dirname(self.log_path)
-        try:
-            with io.open(self.log_path, 'r', encoding=self.encoding) as combined_log_file:
-                for log_line in combined_log_file.readlines():
-
-                    # Write common log lines to all log files
-                    if log_line.startswith(COMMON_LOG_PREFIX):
-                        for services_log_file in services_log_files.values():
-                            services_log_file.write(u"\n{log_line}\n".format(log_line=log_line))
-
-                    else:
-                        # Write each log message to the appropriate log file (by prefix)
-                        separator_location = log_line.find(SEPARATOR)
-                        if separator_location != -1:
-
-                            # split service name from log message
-                            service_name = log_line[:separator_location].strip()
-                            message = log_line[separator_location + 1:]
-
-                            # Create a log file if one doesn't exists
-                            if service_name not in services_log_files:
-                                services_log_files[service_name] = \
-                                    io.open(os.path.join(log_dir, service_name + '.log'), 'w', encoding=self.encoding)
-
-                            services_log_files[service_name].write(message)
-        finally:
-            for services_log_file in services_log_files.values():
-                services_log_file.close()
 
     def remove_containers(self):
         """Remove the environment containers."""
@@ -449,8 +394,7 @@ class EnvironmentController(object):
         return env
 
     def write_common_log_message(self, message):
-        self.logs_file.write(u'\n{prefix} {message}\n\n'.format(prefix=COMMON_LOG_PREFIX, message=message))
-        self.logs_file.flush()
+        self.logs_collector.write(message=message)
 
     def _inspect(self, name, format='{{json}}'):
         """
