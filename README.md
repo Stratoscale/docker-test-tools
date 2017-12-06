@@ -74,13 +74,15 @@ import httplib
 import logging
 import requests
 
+from docker_test_tools.utils import get_health_check
 from docker_test_tools.base_test import BaseDockerTest
 from docker_test_tools.wiremock import WiremockController
-from docker_test_tools.utils import get_curl_health_check
+
+log = logging.getLogger(__name__)
 
 # Define health check functions for the environment services
-consul_health_check = get_curl_health_check('consul.service', url='http://consul.service:8500')
-mock_service_health_check = get_curl_health_check('mocked.service', url='http://mocked.service:9999/__admin')
+consul_health_check = get_health_check('consul.service', url='http://consul.service:8500')
+mock_service_health_check = get_health_check('mocked.service', url='http://mocked.service:9999/__admin')
 
 
 class ExampleTest(BaseDockerTest):

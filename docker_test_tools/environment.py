@@ -6,6 +6,7 @@ import waiting
 from contextlib import contextmanager
 
 from docker_test_tools import logs
+from docker_test_tools import utils
 from docker_test_tools import config
 from docker_test_tools.api_version import get_server_api_version
 
@@ -274,19 +275,8 @@ class EnvironmentController(object):
         """
         services = services if services else self.services
         log.info('Waiting for %s to reach the required state', services)
-
-        def service_checks():
-            """Return True if services checks pass."""
-            return all([self.is_container_ready(name) for name in services])
-
-        try:
-            waiting.wait(service_checks, sleep_seconds=interval, timeout_seconds=timeout)
-            log.info('Services %s reached the required state', services)
-            return True
-
-        except waiting.TimeoutExpired:
-            log.error('%s failed to to reach the required state', services)
-            return False
+        return utils.run_health_checks(checks=[lambda: self.is_container_ready(name) for name in services],
+                                       interval=interval, timeout=timeout)
 
     @contextmanager
     def container_down(self, name, health_check=None, interval=1, timeout=60):

@@ -1,7 +1,10 @@
 import logging
-from six.moves import http_client
+
 import waiting
 import requests
+
+from six.moves import http_client
+from multiprocessing.pool import ThreadPool
 
 log = logging.getLogger(__name__)
 
@@ -15,15 +18,15 @@ def run_health_checks(checks, interval=1, timeout=60):
 
     :raise bool: True is all the services are healthy, False otherwise.
     """
-    log.info('Waiting for the required health checks to pass...')
+    pool = ThreadPool()
+    async_results = [pool.apply_async(wait_for_health, (check, interval, timeout)) for check in checks]
+    return all([async_result.get() for async_result in async_results])
+
+
+def wait_for_health(health_check, interval=1, timeout=60):
     try:
-        waiting.wait(lambda: all([health_check() for health_check in checks]),
-                     sleep_seconds=interval, timeout_seconds=timeout)
-
-        return True
-
+        return waiting.wait(health_check, sleep_seconds=interval, timeout_seconds=timeout)
     except waiting.TimeoutExpired:
-        log.error("Required health checks didn't pass within timeout")
         return False
 
 
@@ -49,7 +52,7 @@ def get_health_check(service_name, url, expected_status=http_client.OK):
 
     :return function: function used to determine if the given service is responsive.
     """
-    log.debug('Defining a CURL based health check for service: %s at: %s', service_name, url)
+    log.debug('Defining a health check for service: %s at: %s', service_name, url)
 
     def url_health_check():
         """Return True if the service is responsive."""
@@ -60,5 +63,5 @@ def get_health_check(service_name, url, expected_status=http_client.OK):
     return url_health_check
 
 
-# For backward compatability
+# For backward compatibility
 get_curl_health_check = get_health_check
