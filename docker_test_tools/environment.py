@@ -275,9 +275,13 @@ class EnvironmentController(object):
         """
         services = services if services else self.services
         log.info('Waiting for %s to reach the required state', services)
-        # pylint: disable=cell-var-from-loop
-        return utils.run_health_checks(checks=[lambda: self.is_container_ready(name) for name in services],
-                                       interval=interval, timeout=timeout)
+
+        checks_callbacks = []
+        for name in services:
+            # pylint: disable=cell-var-from-loop
+            checks_callbacks.append(lambda: self.is_container_ready(name))
+
+        return utils.run_health_checks(checks=checks_callbacks, interval=interval, timeout=timeout)
 
     @contextmanager
     def container_down(self, name, health_check=None, interval=1, timeout=60):
