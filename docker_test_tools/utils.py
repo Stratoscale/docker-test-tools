@@ -63,5 +63,19 @@ def get_health_check(service_name, url, expected_status=http_client.OK):
     return url_health_check
 
 
+def to_str(value):
+    """Return the value as string.
+
+    For python3 compatibility
+    """
+    if isinstance(value, str):
+        return value
+
+    if isinstance(value, bytes):
+        return value.decode('utf-8')
+
+    raise Exception("Type {} was not converted to string".format(type(value)))
+
+
 # For backward compatibility
 get_curl_health_check = get_health_check

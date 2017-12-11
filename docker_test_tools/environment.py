@@ -26,7 +26,7 @@ class EnvironmentController(object):
         self.environment_variables = self._get_environment_variables()
         self.services = self.get_services()
 
-        self.encoding = self.environment_variables.get('PYTHONIOENCODING', 'ascii')
+        self.encoding = self.environment_variables.get('PYTHONIOENCODING', 'utf-8')
         self.work_dir = os.path.dirname(self.log_path)
         self.logs_collector = logs.LogCollector(
             log_path=log_path,
@@ -63,7 +63,7 @@ class EnvironmentController(object):
         except subprocess.CalledProcessError as error:
             raise RuntimeError("Failed getting environment services, reason: %s" % error.output)
 
-        return self._to_str(services_output).strip().split('\n')
+        return utils.to_str(services_output).strip().split('\n')
 
     def setup(self):
         """Sets up the environment using docker commands.
@@ -240,7 +240,7 @@ class EnvironmentController(object):
         except subprocess.CalledProcessError as error:
             raise RuntimeError("Failed getting container %s id, reason: %s" % (name, error.output))
 
-        return self._to_str(output)
+        return utils.to_str(output)
 
     def is_container_ready(self, name):
         """Return True if the container is in ready state.
@@ -250,7 +250,7 @@ class EnvironmentController(object):
 
         :param str name: container name as it appears in the docker compose file.
         """
-        status_output = self._inspect(name, format='{{json .State}}')
+        status_output = self._inspect(name, result_format='{{json .State}}')
 
         if '"Health":' in status_output:
             is_ready = '"Status":"healthy"' in status_output
@@ -275,6 +275,7 @@ class EnvironmentController(object):
         """
         services = services if services else self.services
         log.info('Waiting for %s to reach the required state', services)
+        # pylint: disable=cell-var-from-loop
         return utils.run_health_checks(checks=[lambda: self.is_container_ready(name) for name in services],
                                        interval=interval, timeout=timeout)
 
@@ -387,18 +388,18 @@ class EnvironmentController(object):
     def write_common_log_message(self, message):
         self.logs_collector.write(message=message)
 
-    def _inspect(self, name, format='{{json}}'):
+    def _inspect(self, name, result_format='{{json}}'):
         """
         Returns the inspect content of a container
         :param name: name of container
-        :param format: format of inspect output
+        :param result_format: format of inspect output
         """
         self.validate_service_name(name)
         log.debug("Getting %s container state", name)
         container_id = self.get_container_id(name)
         try:
             inspect_output = subprocess.check_output(
-                r"docker inspect --format='{}' {}".format(format, container_id),
+                r"docker inspect --format='{}' {}".format(result_format, container_id),
                 shell=True, stderr=subprocess.STDOUT, env=self.environment_variables
             )
 
@@ -406,19 +407,4 @@ class EnvironmentController(object):
             logging.warning("Failed getting container %s state, reason: %s", name, error.output)
             return ''
 
-        return self._to_str(inspect_output).strip('"\n')
-
-    @staticmethod
-    def _to_str(value):
-        """
-        For each value, return the value as string
-        For python3 compatibility
-        """
-
-        if isinstance(value, str):
-            return value
-
-        if isinstance(value, bytes):
-            return value.decode('utf-8')
-
-        raise Exception("Type {} was not converted to string".format(type(value)))
+        return utils.to_str(inspect_output).strip('"\n')

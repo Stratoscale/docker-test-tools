@@ -5,6 +5,8 @@ import logging
 import subprocess
 import humanfriendly
 
+from docker_test_tools import utils
+
 log = logging.getLogger(__name__)
 
 
@@ -47,10 +49,11 @@ class StatsCollector(object):
 
     def _get_filters(self):
         """Return the docker-compose project containers."""
-        return subprocess.check_output(
+        filters_output = subprocess.check_output(
             ['docker', 'ps', '--format', '{{.Names}}',
              '--filter', "label=com.docker.compose.project={project}".format(project=self.project)]
-        ).strip().split('\n')
+        )
+        return utils.to_str(filters_output).strip().split('\n')
 
 
 class ClusterStats(object):

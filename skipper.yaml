@@ -1,3 +1,5 @@
 registry: rackattack-nas.dc1:5000
-build-container-image: build
+build-container-image: py27-build
 build-container-net: example_tests-network
+make:
+  makefile: Makefile.internal
