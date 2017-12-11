@@ -323,14 +323,15 @@ services:
         remove_mock.assert_not_called()
         stop_collection_mock.assert_called_once_with()
 
-    def test_wait_for_services(self):
+    @mock.patch('docker_test_tools.environment.EnvironmentController.is_container_ready')
+    def test_wait_for_services(self, mock_is_container_ready):
         """Validate the environment wait_for_services method."""
         controller = self.get_controller()
-        with mock.patch("waiting.wait", return_value=True):
-            self.assertTrue(controller.wait_for_services())
-
-        with mock.patch("waiting.wait", side_effect=TimeoutExpired(timeout_seconds=1, what='something')):
-            self.assertFalse(controller.wait_for_services())
+        mock_is_container_ready.return_value = True
+        self.assertTrue(controller.wait_for_services())
+        mock_is_container_ready.assert_has_calls([mock.call('service1'), mock.call('service2')])
+        mock_is_container_ready.side_effect = TimeoutExpired(timeout_seconds=1, what='something')
+        self.assertFalse(controller.wait_for_services())
 
     def test_from_file(self):
         """"Validate the environment from_file method."""

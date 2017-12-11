@@ -3,6 +3,7 @@ import logging
 import subprocess
 
 import waiting
+from functools import partial
 from contextlib import contextmanager
 
 from docker_test_tools import logs
@@ -275,12 +276,7 @@ class EnvironmentController(object):
         """
         services = services if services else self.services
         log.info('Waiting for %s to reach the required state', services)
-
-        checks_callbacks = []
-        for name in services:
-            # pylint: disable=cell-var-from-loop
-            checks_callbacks.append(lambda: self.is_container_ready(name))
-
+        checks_callbacks = [partial(self.is_container_ready, name) for name in services]
         return utils.run_health_checks(checks=checks_callbacks, interval=interval, timeout=timeout)
 
     @contextmanager
