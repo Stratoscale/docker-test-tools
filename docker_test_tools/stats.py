@@ -115,8 +115,9 @@ class ClusterStats(object):
 
                     services_stats[service_name].append(parsed_line)
         finally:
+            dir_path = os.path.dirname(stat_file_path)
             for service_name, service_stats in services_stats.items():
-                with open(stat_file_path + ".{}.json".format(service_name), 'w') as stat_file:
+                with open(os.path.join(dir_path, service_name + ".json"), 'w') as stat_file:
                     json.dump(service_stats, stat_file, indent=2)
 
     def parse_line(self, line):
