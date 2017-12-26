@@ -97,7 +97,6 @@ class ExampleTest(BaseDockerTest):
     # [OPTIONAL] User defined health checks timeout
     CHECKS_TIMEOUT = 60
 
-
     def setUp(self):
         """Create a wiremock controller and add a cleanup for it."""
         super(ExampleTest, self).setUp()
