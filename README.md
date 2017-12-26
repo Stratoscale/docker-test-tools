@@ -50,11 +50,13 @@ Under an `[environment]` section, define:
 * `project-name`: Compose project name.
 * `docker-compose-path`: Docker compose file path.
 * `reuse-containers`: Whether or not to keep containers between test runs [True/ False].
+* `collect-stats`: Whether or not to save containers stats [True/ False].
 
 For example: `test.cfg` (the section may also be included in `nose2.cfg`)
 ```cfg
 [environment]
 always-on = True
+collect-stats = True
 project-name = test
 reuse-containers = False
 log-path = docker-tests.log
@@ -95,8 +97,6 @@ class ExampleTest(BaseDockerTest):
     # [OPTIONAL] User defined health checks timeout
     CHECKS_TIMEOUT = 60
 
-    # [OPTIONAL] Enable containers stats collection
-    COLLECT_STATS = True
 
     def setUp(self):
         """Create a wiremock controller and add a cleanup for it."""
