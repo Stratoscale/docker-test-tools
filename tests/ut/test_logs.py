@@ -65,7 +65,7 @@ class TestLogsCollector(unittest.TestCase):
         """"Validate the log collector write method."""
         test_message = 'test-message'
         self.log_collector.logs_file = mock.MagicMock(name='logs-file-mock')
-        self.log_collector.write(test_message)
+        self.log_collector.update(test_message)
         self.log_collector.logs_file.write.assert_called_once_with(
             logs.LogCollector.COMMON_LOG_FORMAT.format(message=test_message)
         )

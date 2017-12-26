@@ -44,7 +44,7 @@ class LogCollector(object):
             self.logs_file.close()
             self._split_logs()
 
-    def write(self, message):
+    def update(self, message):
         """Write a common log message to the container logs."""
         self.logs_file.write(self.COMMON_LOG_FORMAT.format(message=message))
         self.logs_file.flush()

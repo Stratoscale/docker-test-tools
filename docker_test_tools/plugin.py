@@ -19,12 +19,14 @@ class EnvironmentPlugin(Plugin):
         config = Config(
             log_path=self.config.as_str('log-path', Config.DEFAULT_LOG_PATH),
             project_name=self.config.as_str('project-name', Config.DEFAULT_PROJECT_NAME),
+            collect_stats=self.config.as_bool('collect-stats', Config.DEFAULT_COLLECT_STATS),
             reuse_containers=self.config.as_bool('reuse-containers', Config.DEFAULT_REUSE_CONTAINERS),
             docker_compose_path=self.config.as_str('docker-compose-path', Config.DEFAULT_DOCKER_COMPOSE_PATH)
         )
         self.controller = EnvironmentController(
             log_path=config.log_path,
             project_name=config.project_name,
+            collect_stats=config.collect_stats,
             compose_path=config.docker_compose_path,
             reuse_containers=config.reuse_containers,
         )
@@ -37,14 +39,16 @@ class EnvironmentPlugin(Plugin):
         - Write a test started log message to the main log file.
         """
         event.test.controller = self.controller
-        self.controller.write_common_log_message("TEST STARTED: {test_id}".format(test_id=event.test.id()))
+        test_name = event.test.id().split('.')[-1]
+        self.controller.update_plugins(test_name)
 
-    def stopTest(self, event):
-        """"Run on test stop.
-
-        - Write a test ended log message to the main log file.
-        """
-        self.controller.write_common_log_message("TEST ENDED: {test_id}".format(test_id=event.test.id()))
+    # def stopTest(self, event):
+    #     """"Run on test stop.
+    #
+    #     - Write a test ended log message to the main log file.
+    #     """
+    #     test_name = event.test.id().split('.')[-1]
+    #     self.controller.write_common_log_message("TEST ENDED: {test_name}".format(test_name=test_name))
 
     def stopTestRun(self, event):
         """Tears down the environment using docker commands."""

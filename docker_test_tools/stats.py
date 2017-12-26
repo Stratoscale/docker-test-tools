@@ -10,6 +10,9 @@ from docker_test_tools import utils
 
 log = logging.getLogger(__name__)
 
+COMMON_STATS_PREFIX = '>>>'
+COMMON_STATS_FORMAT = u'{prefix} {{message}}\n'.format(prefix=COMMON_STATS_PREFIX)
+
 
 class StatsCollector(object):
     """Utility for containers stats collection."""
@@ -22,7 +25,7 @@ class StatsCollector(object):
              '"block": "{{.BlockIO}}"' \
              '}'
 
-    def __init__(self, session_name, target_dir_path, project, encoding, environment_variables):
+    def __init__(self, target_dir_path, project, encoding, environment_variables):
         """Initialize the stats collector."""
         logging.debug("Stats monitor initializing")
         self.project = project
@@ -33,12 +36,8 @@ class StatsCollector(object):
         if not os.path.exists(self.work_dir):
             os.makedirs(self.work_dir)
 
-        self.session_dir = os.path.join(self.work_dir, session_name)
-        if not os.path.exists(self.session_dir):
-            os.makedirs(self.session_dir)
-
-        self.stats_file_path = os.path.join(self.session_dir, 'stats.json')
-        self.stats_summary_path = os.path.join(self.session_dir, 'summary.json')
+        self.stats_file_path = os.path.join(self.work_dir, 'stats.json')
+        self.stats_summary_path = os.path.join(self.work_dir, 'summary.json')
 
         self.stats_file = None
         self.stats_process = None
@@ -73,6 +72,12 @@ class StatsCollector(object):
         )
         return utils.to_str(filters_output).strip().split('\n')
 
+    def update(self, message):
+        """Write a common log message to the container logs."""
+        self.stats_file.flush()
+        self.stats_file.write(COMMON_STATS_FORMAT.format(message=message))
+        self.stats_file.flush()
+
 
 class ClusterStats(object):
     """Parse and calculate containers cluster session stats."""
@@ -101,19 +106,27 @@ class ClusterStats(object):
         """Split the collected docker stats file into a file per service."""
         log.debug("Splitting stats file into separated files per service")
         services_stats = {}
+        common_stats = []
         try:
             with io.open(stat_file_path, 'r', encoding=self.encoding) as combined_stats_file:
                 for raw_line in combined_stats_file.readlines():
 
-                    parsed_line = self.parse_line(line=raw_line)
-                    if not parsed_line:
-                        continue
+                    if raw_line.startswith(COMMON_STATS_PREFIX):
+                        value = {"test": raw_line.lstrip(COMMON_STATS_PREFIX).strip()}
+                        common_stats.append(value)
+                        for service_stats in services_stats.values():
+                            service_stats.append(value)
 
-                    service_name = parsed_line.pop("name")
-                    if service_name not in services_stats:
-                        services_stats[service_name] = []
+                    else:
+                        parsed_line = self.parse_line(line=raw_line)
+                        if not parsed_line:
+                            continue
 
-                    services_stats[service_name].append(parsed_line)
+                        service_name = parsed_line.pop("name")
+                        if service_name not in services_stats:
+                            services_stats[service_name] = common_stats[:]
+
+                        services_stats[service_name].append(parsed_line)
         finally:
             dir_path = os.path.dirname(stat_file_path)
             for service_name, service_stats in services_stats.items():
@@ -129,12 +142,13 @@ class ClusterStats(object):
         # Cleanup escape characters prefix
         line = line.lstrip(self.SAMPLE_PREFIX)
 
-        # Skip bad stats metrics
-        if '--' in line:
-            return
-
         # Split the stat data to it's raw components
         components = json.loads(line)
+
+        # Handle bad stats metrics
+        for key, val in components.items():
+            if val == '--':
+                components[key] = 0
 
         # Skip bad stats metrics
         if len(components) != 5:
@@ -261,9 +275,9 @@ class ContainerStats(object):
     def to_dict(self):
         return {
             "cpu": {
-                "min": self.cpu_min,
-                "max": self.cpu_max,
-                "avg": self.cpu_avg,
+                "min": "%.2f" % self.cpu_min,
+                "max": "%.2f" % self.cpu_max,
+                "avg": "%.2f" % self.cpu_avg,
 
             },
             "ram": {

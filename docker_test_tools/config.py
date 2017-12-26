@@ -32,6 +32,7 @@ class Config(object):
         DTT_PROJECT_NAME = <compose project name>
         DTT_COMPOSE_PATH = <docker compose path>
         DTT_REUSE_CONTAINERS = <1/0>.
+        DTT_COLLECT_STATS = <1/0>
 
     """
     # Expected section name in the configuration file
@@ -42,29 +43,34 @@ class Config(object):
     PROJECT_NAME_OPTION = 'project-name'
     REUSE_CONTAINERS_OPTION = 'reuse-containers'
     DOCKER_COMPOSE_PATH_OPTION = 'docker-compose-path'
+    COLLECT_STATS_OPTION = 'collect-stats'
 
     # Expected options in the configuration file
     LOG_PATH_ENV_VAR = 'DTT_LOG_PATH'
     PROJECT_NAME_ENV_VAR = 'DTT_PROJECT_NAME'
     REUSE_CONTAINERS_ENV_VAR = 'DTT_REUSE_CONTAINERS'
     DOCKER_COMPOSE_PATH_ENV_VAR = 'DTT_COMPOSE_PATH'
+    COLLECT_STATS_ENV_VAR = 'DTT_COLLECT_STATS'
 
     # Configuration default values
     DEFAULT_LOG_PATH = 'docker-tests.log'
     DEFAULT_PROJECT_NAME = 'docker-tests'
     DEFAULT_REUSE_CONTAINERS = False
     DEFAULT_DOCKER_COMPOSE_PATH = 'docker-compose.yml'
+    DEFAULT_COLLECT_STATS = False
 
     def __init__(self,
                  config_path=None,
                  log_path=DEFAULT_LOG_PATH,
                  project_name=DEFAULT_PROJECT_NAME,
+                 collect_stats=DEFAULT_COLLECT_STATS,
                  reuse_containers=DEFAULT_REUSE_CONTAINERS,
                  docker_compose_path=DEFAULT_DOCKER_COMPOSE_PATH):
 
         # Set default values
         self.log_path = log_path
         self.project_name = project_name
+        self.collect_stats = collect_stats
         self.reuse_containers = reuse_containers
         self.docker_compose_path = docker_compose_path
 
@@ -93,6 +99,9 @@ class Config(object):
 
         if self.REUSE_CONTAINERS_OPTION in read_options:
             self.reuse_containers = config_reader.getboolean(self.SECTION_NAME, self.REUSE_CONTAINERS_OPTION)
+
+        if self.COLLECT_STATS_OPTION in read_options:
+            self.collect_stats = config_reader.getboolean(self.SECTION_NAME, self.COLLECT_STATS_OPTION)
 
         if self.PROJECT_NAME_OPTION in read_options:
             self.project_name = config_reader.get(self.SECTION_NAME, self.PROJECT_NAME_OPTION)

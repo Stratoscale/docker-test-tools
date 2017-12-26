@@ -7,6 +7,7 @@ from functools import partial
 from contextlib import contextmanager
 
 from docker_test_tools import logs
+from docker_test_tools import stats
 from docker_test_tools import utils
 from docker_test_tools import config
 from docker_test_tools.api_version import get_server_api_version
@@ -17,7 +18,7 @@ log = logging.getLogger(__name__)
 class EnvironmentController(object):
     """Utility for managing environment operations."""
 
-    def __init__(self, project_name, compose_path, log_path, reuse_containers=False):
+    def __init__(self, project_name, compose_path, log_path, collect_stats=False, reuse_containers=False):
 
         self.log_path = log_path
         self.compose_path = compose_path
@@ -29,6 +30,7 @@ class EnvironmentController(object):
 
         self.encoding = self.environment_variables.get('PYTHONIOENCODING', 'utf-8')
         self.work_dir = os.path.dirname(self.log_path)
+
         self.logs_collector = logs.LogCollector(
             log_path=log_path,
             encoding=self.encoding,
@@ -36,6 +38,14 @@ class EnvironmentController(object):
             compose_path=compose_path,
             environment_variables=self.environment_variables,
         )
+
+        self.plugins = []
+        self.plugins.append(self.logs_collector)
+        if collect_stats:
+            self.plugins.append(stats.StatsCollector(encoding=self.encoding,
+                                                     project=self.project_name,
+                                                     target_dir_path=self.work_dir,
+                                                     environment_variables=self.environment_variables))
 
     @classmethod
     def from_file(cls, config_path):
@@ -46,6 +56,7 @@ class EnvironmentController(object):
         config_object = config.Config(config_path=config_path)
         return cls(log_path=config_object.log_path,
                    project_name=config_object.project_name,
+                   collect_stats=config_object.collect_stats,
                    compose_path=config_object.docker_compose_path,
                    reuse_containers=config_object.reuse_containers)
 
@@ -75,7 +86,9 @@ class EnvironmentController(object):
             log.debug("Setting up the environment")
             self.cleanup()
             self.run_containers()
-            self.logs_collector.start()
+
+            for plugin in self.plugins:
+                plugin.start()
         except:
             log.exception("Setup failure, tearing down the test environment")
             self.teardown()
@@ -88,7 +101,8 @@ class EnvironmentController(object):
         """
         log.debug("Tearing down the environment")
         try:
-            self.logs_collector.stop()
+            for plugin in self.plugins:
+                plugin.stop()
         finally:
             self.cleanup()
 
@@ -385,8 +399,9 @@ class EnvironmentController(object):
         env['COMPOSE_API_VERSION'] = env['DOCKER_API_VERSION'] = server_api_version
         return env
 
-    def write_common_log_message(self, message):
-        self.logs_collector.write(message=message)
+    def update_plugins(self, message):
+        for plugin in self.plugins:
+            plugin.update(message=message)
 
     def _inspect(self, name, result_format='{{json}}'):
         """

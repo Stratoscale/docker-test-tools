@@ -1,7 +1,6 @@
 import unittest
 
 from docker_test_tools import utils
-from docker_test_tools import stats
 
 
 class BaseDockerTest(unittest.TestCase):
@@ -15,7 +14,6 @@ class BaseDockerTest(unittest.TestCase):
     * CHECKS_INTERVAL: Define the interval (in seconds) for sampling required services checks.
     * REQUIRED_HEALTH_CHECKS: Define the health checks (callables) to pass up before the test starts running.
     * WAIT_FOR_SERVICES: Define whether to wait for services health checks at test setup or not.
-    * COLLECT_STATS: Define whether to enable stats collection when the test run or not.
     """
     # Override to define the timeout (in seconds) for the required checks to pass.
     CHECKS_TIMEOUT = 120
@@ -29,23 +27,8 @@ class BaseDockerTest(unittest.TestCase):
     # Override to disable health checks validation before the test starts running.
     WAIT_FOR_SERVICES = True
 
-    # Override to enable stats collection when the test run.
-    COLLECT_STATS = False
-
     def setUp(self):
         """Manage the required containers setup."""
-        if self.COLLECT_STATS:
-            # Start stats collection.
-            stats_collector = stats.StatsCollector(
-                session_name=self.id(),
-                encoding=self.controller.encoding,
-                project=self.controller.project_name,
-                target_dir_path=self.controller.work_dir,
-                environment_variables=self.controller.environment_variables
-            )
-            stats_collector.start()
-            self.addCleanup(stats_collector.stop)
-
         if self.WAIT_FOR_SERVICES:
             # Wait for docker inspection on the services to pass
             self.assertTrue(

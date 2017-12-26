@@ -329,7 +329,7 @@ services:
         controller = self.get_controller()
         mock_is_container_ready.return_value = True
         self.assertTrue(controller.wait_for_services())
-        mock_is_container_ready.assert_has_calls([mock.call('service1'), mock.call('service2')])
+        mock_is_container_ready.assert_has_calls([mock.call('service1'), mock.call('service2')], any_order=True)
         mock_is_container_ready.side_effect = TimeoutExpired(timeout_seconds=1, what='something')
         self.assertFalse(controller.wait_for_services())
 

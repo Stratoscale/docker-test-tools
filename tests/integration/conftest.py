@@ -21,12 +21,4 @@ def pytest_runtest_setup(item):
     - Write a test started log message to the main log file.
     """
     item.parent.obj.controller = controller
-    controller.write_common_log_message("TEST STARTED: {test_id}".format(test_id=item.nodeid))
-
-
-def pytest_runtest_teardown(item):
-    """"Run on test stop.
-
-    - Write a test ended log message to the main log file.
-    """
-    controller.write_common_log_message("TEST ENDED: {test_id}".format(test_id=item.nodeid))
+    controller.update_plugins(item.nodeid)
