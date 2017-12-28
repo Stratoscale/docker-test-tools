@@ -85,6 +85,7 @@ class Config(object):
         """Update the config values based on env variables."""
         self.log_path = os.environ.get(self.LOG_PATH_ENV_VAR, self.log_path)
         self.project_name = os.environ.get(self.PROJECT_NAME_ENV_VAR, self.project_name)
+        self.collect_stats = os.environ.get(self.COLLECT_STATS_ENV_VAR, self.collect_stats)
         self.reuse_containers = os.environ.get(self.REUSE_CONTAINERS_ENV_VAR, self.reuse_containers)
         self.docker_compose_path = os.environ.get(self.DOCKER_COMPOSE_PATH_ENV_VAR, self.docker_compose_path)
 

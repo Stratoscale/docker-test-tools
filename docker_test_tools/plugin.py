@@ -42,14 +42,6 @@ class EnvironmentPlugin(Plugin):
         test_name = event.test.id().split('.')[-1]
         self.controller.update_plugins(test_name)
 
-    # def stopTest(self, event):
-    #     """"Run on test stop.
-    #
-    #     - Write a test ended log message to the main log file.
-    #     """
-    #     test_name = event.test.id().split('.')[-1]
-    #     self.controller.write_common_log_message("TEST ENDED: {test_name}".format(test_name=test_name))
-
     def stopTestRun(self, event):
         """Tears down the environment using docker commands."""
         if self.controller:
