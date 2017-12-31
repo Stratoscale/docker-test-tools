@@ -60,7 +60,7 @@ class StatsCollector(object):
 
         if self.stats_file:
             self.stats_file.close()
-            with open(self.stats_summary_path, 'a') as target:
+            with open(self.stats_summary_path, 'w') as target:
                 cluster_stats = ClusterStats(stat_file_path=self.stats_file_path, encoding=self.encoding).to_dict()
                 json.dump(cluster_stats, target, sort_keys=True, indent=2)
 
@@ -147,7 +147,7 @@ class ClusterStats(object):
 
         # Handle bad stats metrics
         for key, val in components.items():
-            if val == '--':
+            if '--' in val:
                 components[key] = 0
 
         # Skip bad stats metrics
@@ -156,8 +156,9 @@ class ClusterStats(object):
 
         name = components['name']
 
-        # Get the used CPU percentage as a floating number
-        components['cpu'] = float(components['cpu'][:-1])
+        if not isinstance(components['cpu'], int):
+            # Get the used CPU percentage as a floating number
+            components['cpu'] = float(components['cpu'][:-1])
 
         # Get the used stats numbers as used bytes number
         components['ram'] = self.get_bytes(components['ram'])
@@ -179,6 +180,9 @@ class ClusterStats(object):
     @staticmethod
     def get_bytes(raw_value):
         """Get the number as used bytes number"""
+        if isinstance(raw_value, int):
+            return raw_value
+
         return humanfriendly.parse_size(raw_value.split('/')[0], binary=True)
 
     def __str__(self):

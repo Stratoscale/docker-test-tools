@@ -12,7 +12,7 @@ flake8:
 
 pylint:
 	mkdir -p build/
-	PYLINTHOME=reports/ pylint -r n docker_test_tools
+	PYLINTHOME=reports/ pylint -d W0612 -r n docker_test_tools
 
 test:
 	# Run the unittests and create a junit-xml report
