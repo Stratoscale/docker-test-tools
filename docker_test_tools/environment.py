@@ -88,7 +88,11 @@ class EnvironmentController(object):
             self.run_containers()
 
             for plugin in self.plugins:
-                plugin.start()
+                try:
+                    plugin.start()
+                except:
+                    logging.warning("Failed starting Plugin %s, skipping", plugin)
+
         except:
             log.exception("Setup failure, tearing down the test environment")
             self.teardown()
@@ -102,7 +106,10 @@ class EnvironmentController(object):
         log.debug("Tearing down the environment")
         try:
             for plugin in self.plugins:
-                plugin.stop()
+                try:
+                    plugin.stop()
+                except:
+                    logging.warning("Failed stopping Plugin %s, skipping", plugin)
         finally:
             self.cleanup()
 

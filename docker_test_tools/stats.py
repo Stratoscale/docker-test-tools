@@ -111,6 +111,9 @@ class ClusterStats(object):
             with io.open(stat_file_path, 'r', encoding=self.encoding) as combined_stats_file:
                 for raw_line in combined_stats_file.readlines():
 
+                    # Cleanup escape characters prefix
+                    raw_line = raw_line.lstrip(self.SAMPLE_PREFIX)
+
                     if raw_line.startswith(COMMON_STATS_PREFIX):
                         value = {"test": raw_line.lstrip(COMMON_STATS_PREFIX).strip()}
                         common_stats.append(value)
@@ -139,43 +142,43 @@ class ClusterStats(object):
         - Extract the line data from the raw string.
         - Add the data to the stats summary info.
         """
-        # Cleanup escape characters prefix
-        line = line.lstrip(self.SAMPLE_PREFIX)
+        try:
+            # Split the stat data to it's raw components
+            components = json.loads(line)
 
-        # Split the stat data to it's raw components
-        components = json.loads(line)
+            # Handle bad stats metrics
+            for key, val in components.items():
+                if '--' in val:
+                    components[key] = 0
 
-        # Handle bad stats metrics
-        for key, val in components.items():
-            if '--' in val:
-                components[key] = 0
+            # Skip bad stats metrics
+            if len(components) != 5:
+                return
 
-        # Skip bad stats metrics
-        if len(components) != 5:
-            return
+            name = components['name']
 
-        name = components['name']
+            if not isinstance(components['cpu'], int):
+                # Get the used CPU percentage as a floating number
+                components['cpu'] = float(components['cpu'][:-1])
 
-        if not isinstance(components['cpu'], int):
-            # Get the used CPU percentage as a floating number
-            components['cpu'] = float(components['cpu'][:-1])
+            # Get the used stats numbers as used bytes number
+            components['ram'] = self.get_bytes(components['ram'])
+            components['net'] = self.get_bytes(components['net'])
+            components['block'] = self.get_bytes(components['block'])
 
-        # Get the used stats numbers as used bytes number
-        components['ram'] = self.get_bytes(components['ram'])
-        components['net'] = self.get_bytes(components['net'])
-        components['block'] = self.get_bytes(components['block'])
+            if name not in self.summary_data:
+                self.summary_data[name] = ContainerStats(name=name)
 
-        if name not in self.summary_data:
-            self.summary_data[name] = ContainerStats(name=name)
+            self.summary_data[name].update(
+                cpu_used=components['cpu'],
+                ram_used=components['ram'],
+                net_io_used=components['net'],
+                block_io_used=components['block']
+            )
 
-        self.summary_data[name].update(
-            cpu_used=components['cpu'],
-            ram_used=components['ram'],
-            net_io_used=components['net'],
-            block_io_used=components['block']
-        )
-
-        return components
+            return components
+        except:
+            logging.debug("Failed parsing line: %r", line)
 
     @staticmethod
     def get_bytes(raw_value):
