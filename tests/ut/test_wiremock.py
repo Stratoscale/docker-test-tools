@@ -61,30 +61,38 @@ class TestWiremockController(unittest.TestCase):
 
             # Mock response assertion to pass
             mock_response.raise_for_status = mock.MagicMock()
-
+            mock_response.json.return_value = {'uuid': '162d458b-86d6-4161-9918-02cf27566422'}
             # Setting mapping should pass
-            self.controller.set_mapping_from_json(test_json)
+            stub_id = self.controller.set_mapping_from_json(test_json)
             mock_post.assert_any_call('http://mocked.service:9999/__admin/mappings', json=test_json)
+            self.assertEqual(stub_id, '162d458b-86d6-4161-9918-02cf27566422')
 
     @mock.patch('docker_test_tools.wiremock.WiremockController.set_mapping_from_json')
     def test_set_mapping_from_file(self, from_json_mock):
         """Test 'set_mapping_from_file' method."""
         # Define mock target name for 'open'
         open_name = '%s.open' % wiremock.__name__
+        from_json_mock.return_value = '162d458b-86d6-4161-9918-02cf27566422'
 
         # Mock open & file object to return a valid json when read
         m = mock.mock_open(read_data='{"valid": "json"}')
         with mock.patch(open_name, m, create=True):
-            self.controller.set_mapping_from_file('json-file-path')
+            stub_id = self.controller.set_mapping_from_file('json-file-path')
             from_json_mock.assert_called_once_with({u"valid": u"json"})
+            self.assertEqual(stub_id, '162d458b-86d6-4161-9918-02cf27566422')
 
     @mock.patch('docker_test_tools.wiremock.WiremockController.set_mapping_from_file')
     def test_set_mapping_from_files(self, from_file_mock):
         """Test 'set_mapping_from_files' method."""
         test_paths = ['json-file-path-1', 'json-file-path-2']
-        self.controller.set_mapping_from_files(test_paths)
+        stub_ids = ['162d458b-86d6-4161-9918-02cf27566422', '41a0a68b-ecf3-4879-9542-a12028bd7c09']
+        from_file_mock.side_effect = stub_ids
+
+        stub_id_dict = self.controller.set_mapping_from_files(test_paths)
         for test_path in test_paths:
             from_file_mock.assert_any_call(test_path)
+
+        self.assertDictEqual(stub_id_dict, dict(zip(test_paths, stub_ids)))
 
     @mock.patch('os.path.isdir')
     @mock.patch('docker_test_tools.wiremock.WiremockController.set_mapping_from_files')
@@ -137,6 +145,12 @@ class TestWiremockController(unittest.TestCase):
             mock_get.assert_called_once_with("http://mocked.service:9999/__admin/requests")
             self.assertEquals(len(requests), 1)
             self.assertEquals(requests[0]["request"]["url"], "/received-request/6")
+
+            mock_get.reset_mock()
+            requests = self.controller.get_matching_requests(stub_id="162d458b-86d6-4161-9918-02cf27566422")
+            mock_get.assert_called_once_with("http://mocked.service:9999/__admin/requests")
+            self.assertEquals(len(requests), 1)
+            self.assertEquals(requests[0]["stubMapping"]["uuid"], "162d458b-86d6-4161-9918-02cf27566422")
 
     def test_delete_request_journal(self):
         """Test 'delete_request_journal' method."""

@@ -22,6 +22,9 @@
       "status" : 200,
       "body" : "This was matched"
     },
+    "stubMapping": {
+      "uuid": "162d458b-86d6-4161-9918-02cf27566422"
+    },
     "wasMatched" : true
   }, {
     "id" : "aa1a4250-f87c-4a17-82e3-79c83441ce03",
