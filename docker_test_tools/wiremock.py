@@ -43,44 +43,55 @@ class WiremockController(object):
         """Set wiremock service mapping based on given directory.
 
         :param str dir_path: directory path to scan - should contain json mapping files.
+        :return dict: of format {json_file_path: stub_uuid} the uuid of the mapping stub
         """
         log.debug('Setting service %s wiremock mapping using directory %s', self.url, dir_path)
         if not os.path.isdir(dir_path):
             raise ValueError("'%s' is not a valid dir" % dir_path)
 
         mapping_files_pattern = os.path.join(dir_path, '*.json')
-        self.set_mapping_from_files(glob.iglob(mapping_files_pattern))
+        return self.set_mapping_from_files(glob.iglob(mapping_files_pattern))
 
     def set_mapping_from_files(self, json_paths):
         """Set wiremock service mapping based on given json paths.
 
         :param list json_paths: list of json stub file paths.
+        :return dict: of format {json_file_path: stub_uuid} the uuid of the mapping stub
         """
+
+        uuid_map = {}
         for json_path in json_paths:
-            self.set_mapping_from_file(json_path)
+            uuid_map[json_path] = self.set_mapping_from_file(json_path)
+
+        return uuid_map
 
     def set_mapping_from_file(self, json_path):
         """Set wiremock service mapping based on given json path.
 
         :param str json_path: json stub file path.
+        :return str: the uuid of the mapping stub
         """
         log.debug('Setting service %s wiremock mapping using file %s', self.url, json_path)
         with open(json_path, 'r') as json_file:
             json_object = json.load(json_file)
-        self.set_mapping_from_json(json_object)
+        return self.set_mapping_from_json(json_object)
 
     def set_mapping_from_json(self, json_object):
         """Set wiremock service mapping based on given json object.
 
         :param json_object: json data of mapping stub.
+        :return str: the uuid of the mapping stub
         :raise WiremockError: on failure to configure service.
         """
         log.debug('Setting service %s wiremock mapping using json: %s', self.url, json_object)
         try:
-            requests.post(self.admin_mapping_url, json=json_object).raise_for_status()
+            resp = requests.post(self.admin_mapping_url, json=json_object)
+            resp.raise_for_status()
         except:
             log.exception("Failed setting service %s wiremock mapping using json: %s", self.url, json_object)
             raise WiremockError("Failed setting service %s wiremock mapping using json: %s" % (self.url, json_object))
+
+        return resp.json()['uuid']
 
     def reset_mapping(self):
         """Reset wiremock service mapping.
@@ -105,13 +116,21 @@ class WiremockController(object):
         response_body = json.loads(response.text)
         return response_body["requests"]
 
-    def get_matching_requests(self, inner_url):
+    def get_matching_requests(self, inner_url=None, stub_id=None):
         """Get all wiremock service requests of the given type (by inner URL) from  the journal.
 
         :param inner_url: The inner URL with which to filter journal requests by matching.
+        :param stub_id: The matched stub id with which to filter journal requests by matching.
         """
-        return [request for request in self.get_request_journal() if
-                request["request"]["url"] == inner_url]
+        matching_requests = []
+        for request in self.get_request_journal():
+            if inner_url is not None and request["request"]["url"] != inner_url:
+                continue
+            if stub_id is not None and (not request["wasMatched"] or request["stubMapping"]["uuid"] != stub_id):
+                continue
+            matching_requests.append(request)
+
+        return matching_requests
 
     def delete_request_journal(self):
         """Delete all entries from the service request journal."""
