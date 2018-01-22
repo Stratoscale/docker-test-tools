@@ -1,4 +1,5 @@
 import os
+import docker
 import logging
 import subprocess
 
@@ -41,6 +42,7 @@ class EnvironmentController(object):
 
         self.plugins = []
         self.plugins.append(self.logs_collector)
+        self.docker_client = docker.client.APIClient()
         if collect_stats:
             self.plugins.append(stats.StatsCollector(encoding=self.encoding,
                                                      project=self.project_name,
@@ -254,15 +256,19 @@ class EnvironmentController(object):
         :param str name: container name as it appears in the docker compose file.
         """
         self.validate_service_name(name)
-        try:
-            output = subprocess.check_output(
-                ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'ps', '-q', name],
-                stderr=subprocess.STDOUT, env=self.environment_variables
-            )
-        except subprocess.CalledProcessError as error:
-            raise RuntimeError("Failed getting container %s id, reason: %s" % (name, error.output))
 
-        return utils.to_str(output)
+        # Filter the required container by container name docker-compose project.
+        # Since the python docker client support filtering only by one label, the second filter is done manually
+        filters = {
+            "label": "com.docker.compose.service={service}".format(service=name)
+        }
+        containers = self.docker_client.containers(filters=filters)
+        containers = [container for container in containers
+                      if 'com.docker.compose.project' in container['Labels'] and
+                      container['Labels']['com.docker.compose.project'] == self.project_name]
+        if len(containers) != 1:
+            raise RuntimeError("Unexpected containers number (%d) were found for name %s and project %s" % (len(containers), name, self.project_name))
+        return containers[0]['Id']
 
     def is_container_ready(self, name):
         """Return True if the container is in ready state.
@@ -272,12 +278,12 @@ class EnvironmentController(object):
 
         :param str name: container name as it appears in the docker compose file.
         """
-        status_output = self._inspect(name, result_format='{{json .State}}')
+        status_output = self._inspect(name)['State']
 
-        if '"Health":' in status_output:
-            is_ready = '"Status":"healthy"' in status_output
+        if 'Health' in status_output:
+            is_ready = status_output['Health']['Status'] == "healthy"
         else:
-            is_ready = '"Status":"running"' in status_output
+            is_ready = status_output['Status'] == "running"
 
         log.debug("Container %s ready: %s", name, is_ready)
         return is_ready
@@ -287,7 +293,7 @@ class EnvironmentController(object):
 
         :param str name: container name as it appears in the docker compose file.
         """
-        return self._inspect(name, '{{json .State.Status}}')
+        return self._inspect(name)['State']['Status']
 
     def wait_for_services(self, services=None, interval=1, timeout=60):
         """Wait for the services checks to pass.
@@ -410,23 +416,14 @@ class EnvironmentController(object):
         for plugin in self.plugins:
             plugin.update(message=message)
 
-    def _inspect(self, name, result_format='{{json}}'):
+    def _inspect(self, name):
         """
         Returns the inspect content of a container
         :param name: name of container
-        :param result_format: format of inspect output
         """
         self.validate_service_name(name)
         log.debug("Getting %s container state", name)
         container_id = self.get_container_id(name)
-        try:
-            inspect_output = subprocess.check_output(
-                r"docker inspect --format='{}' {}".format(result_format, container_id),
-                shell=True, stderr=subprocess.STDOUT, env=self.environment_variables
-            )
+        inspect_output = self.docker_client.inspect_container(container_id)
 
-        except subprocess.CalledProcessError as error:
-            logging.warning("Failed getting container %s state, reason: %s", name, error.output)
-            return ''
-
-        return utils.to_str(inspect_output).strip('"\n')
+        return inspect_output

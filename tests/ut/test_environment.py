@@ -75,11 +75,14 @@ services:
         )
 
         mocked_check_output.return_value = "DOCKER_SERVICE"
+        self.controller.docker_client.containers = mock.MagicMock(return_value=[
+            {
+                'Labels': {'com.docker.compose.project': self.project_name},
+                'Id': 'container-id'
+            }
+        ])
         self.controller.get_container_id(service_name)
-        mocked_check_output.assert_called_with(
-            ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'ps', '-q', service_name],
-            stderr=subprocess.STDOUT, env=self.ENVIRONMENT_VARIABLES
-        )
+        self.controller.docker_client.containers.assert_called_with(filters={'label': 'com.docker.compose.service=test'})
 
         self.controller.pause_container(service_name)
         mocked_check_output.assert_called_with(
@@ -107,33 +110,42 @@ services:
 
         mock_get_id = mock.MagicMock(return_value='test-id')
         with mock.patch("docker_test_tools.environment.EnvironmentController.get_container_id", mock_get_id):
-            mocked_check_output.return_value = '{"Health": {"Status":"healthy"}}'
+            self.controller.docker_client.inspect_container = mock.MagicMock(return_value={
+                "State": {
+                    "Health": {
+                        "Status": "healthy"
+                    }
+                }
+            })
             self.assertTrue(self.controller.is_container_ready('test'))
-            mocked_check_output.assert_called_with(
-                r"docker inspect --format='{{json .State}}' test-id",
-                shell=True, stderr=subprocess.STDOUT, env=self.ENVIRONMENT_VARIABLES
-            )
+            self.controller.docker_client.inspect_container.assert_called_with('test-id')
 
-            mocked_check_output.return_value = '{"Health": {"Status":"unhealthy"}}'
+            self.controller.docker_client.inspect_container = mock.MagicMock(return_value={
+                "State": {
+                    "Health": {
+                        "Status": "unhealthy"
+                    }
+                }
+            })
             self.assertFalse(self.controller.is_container_ready('test'))
-            mocked_check_output.assert_called_with(
-                r"docker inspect --format='{{json .State}}' test-id",
-                shell=True, stderr=subprocess.STDOUT, env=self.ENVIRONMENT_VARIABLES
-            )
+            self.controller.docker_client.inspect_container.assert_called_with('test-id')
 
-            mocked_check_output.return_value = '{"Status":"running"}'
+            self.controller.docker_client.inspect_container = mock.MagicMock(return_value={
+                "State": {
+                    "Status": "running"
+                }
+            })
             self.assertTrue(self.controller.is_container_ready('test'))
-            mocked_check_output.assert_called_with(
-                r"docker inspect --format='{{json .State}}' test-id",
-                shell=True, stderr=subprocess.STDOUT, env=self.ENVIRONMENT_VARIABLES
-            )
+            self.controller.docker_client.inspect_container.assert_called_with('test-id')
 
-            mocked_check_output.return_value = '{"Status":"not-running"}'
+            self.controller.docker_client.inspect_container = mock.MagicMock(return_value={
+                "State": {
+                    "Status": "not-running"
+                }
+            })
+
             self.assertFalse(self.controller.is_container_ready('test'))
-            mocked_check_output.assert_called_with(
-                r"docker inspect --format='{{json .State}}' test-id",
-                shell=True, stderr=subprocess.STDOUT, env=self.ENVIRONMENT_VARIABLES
-            )
+            self.controller.docker_client.inspect_container.assert_called_with('test-id')
 
     @mock.patch('subprocess.check_output', mock.MagicMock(side_effect=subprocess.CalledProcessError(1, '', '')))
     @mock.patch('docker_test_tools.environment.EnvironmentController.validate_service_name', mock.MagicMock())
@@ -175,6 +187,11 @@ services:
 
         mock_get_id = mock.MagicMock(return_value='test-id')
         with mock.patch("docker_test_tools.environment.EnvironmentController.get_container_id", mock_get_id):
+            self.controller.docker_client.inspect_container = mock.MagicMock(return_value={
+                "State": {
+                    "Status": "not-running"
+                }
+            })
             self.assertFalse(self.controller.is_container_ready('test'))
 
     def test_container_methods_bad_service_name(self):
