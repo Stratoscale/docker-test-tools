@@ -59,11 +59,7 @@ class WiremockController(object):
         :return dict: of format {json_file_path: stub_uuid} the uuid of the mapping stub
         """
 
-        uuid_map = {}
-        for json_path in json_paths:
-            uuid_map[json_path] = self.set_mapping_from_file(json_path)
-
-        return uuid_map
+        return {json_path: self.set_mapping_from_file(json_path) for json_path in json_paths}
 
     def set_mapping_from_file(self, json_path):
         """Set wiremock service mapping based on given json path.
