@@ -19,13 +19,19 @@ log = logging.getLogger(__name__)
 class EnvironmentController(object):
     """Utility for managing environment operations."""
 
-    def __init__(self, project_name, compose_path, log_path, collect_stats=False, reuse_containers=False):
+    def __init__(self,
+                 project_name,
+                 compose_path,
+                 log_path,
+                 collect_stats=False,
+                 reuse_containers=False):
 
         self.log_path = log_path
         self.compose_path = compose_path
         self.project_name = project_name
         self.reuse_containers = reuse_containers
 
+        self.docker_client = docker.client.APIClient()
         self.environment_variables = self._get_environment_variables()
         self.services = self.get_services()
 
@@ -42,12 +48,16 @@ class EnvironmentController(object):
 
         self.plugins = []
         self.plugins.append(self.logs_collector)
-        self.docker_client = docker.client.APIClient()
+
         if collect_stats:
-            self.plugins.append(stats.StatsCollector(encoding=self.encoding,
-                                                     project=self.project_name,
-                                                     target_dir_path=self.work_dir,
-                                                     environment_variables=self.environment_variables))
+            self.plugins.append(
+                stats.StatsCollector(
+                    encoding=self.encoding,
+                    project=self.project_name,
+                    target_dir_path=self.work_dir,
+                    environment_variables=self.environment_variables
+                )
+            )
 
     @classmethod
     def from_file(cls, config_path):
@@ -65,7 +75,7 @@ class EnvironmentController(object):
     def get_services(self):
         """Get the services info based on the compose file.
 
-        :return dict: of format {'service-name': check_callback}
+        :return list: service names.
         """
         log.debug("Getting environment services, using docker compose: %s", self.compose_path)
         try:
@@ -158,117 +168,70 @@ class EnvironmentController(object):
                 stderr=subprocess.STDOUT, env=self.environment_variables
             )
         except subprocess.CalledProcessError as error:
-            raise RuntimeError("Failed running environment containers, reason: %s" % error.output)
+            raise RuntimeError("Failed killing environment containers, reason: %s" % error.output)
 
     def kill_container(self, name):
         """Kill the container.
 
         :param str name: container name as it appears in the docker compose file.
         """
-        self.validate_service_name(name)
         log.debug("Killing %s container", name)
-        try:
-            subprocess.check_output(
-                ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'kill', name],
-                stderr=subprocess.STDOUT, env=self.environment_variables
-            )
-        except subprocess.CalledProcessError as error:
-            raise RuntimeError("Failed killing container %s reason: %s" % (name, error.output))
+        container_id = self.get_container_id(name=name)
+        self.docker_client.kill(container_id)
 
     def restart_container(self, name):
         """Restart the container.
 
         :param str name: container name as it appears in the docker compose file.
         """
-        self.validate_service_name(name)
-        log.debug("Restarting container %s", name)
-        try:
-            subprocess.check_output(
-                ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'restart', name],
-                stderr=subprocess.STDOUT, env=self.environment_variables
-            )
-        except subprocess.CalledProcessError as error:
-            raise RuntimeError("Failed restarting container %s reason: %s" % (name, error.output))
+        log.debug("Restarting %s container", name)
+        container_id = self.get_container_id(name=name)
+        self.docker_client.restart(container_id)
 
     def pause_container(self, name):
         """Pause the container.
 
         :param str name: container name as it appears in the docker compose file.
         """
-        self.validate_service_name(name)
         log.debug("Pausing %s container", name)
-        try:
-            subprocess.check_output(
-                ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'pause', name],
-                stderr=subprocess.STDOUT, env=self.environment_variables
-            )
-        except subprocess.CalledProcessError as error:
-            raise RuntimeError("Failed pausing container %s reason: %s" % (name, error.output))
+        container_id = self.get_container_id(name=name)
+        self.docker_client.pause(container_id)
 
     def unpause_container(self, name):
         """Unpause the container.
 
         :param str name: container name as it appears in the docker compose file.
         """
-        self.validate_service_name(name)
         log.debug("Unpausing %s container", name)
-        try:
-            subprocess.check_output(
-                ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'unpause', name],
-                stderr=subprocess.STDOUT, env=self.environment_variables
-            )
-        except subprocess.CalledProcessError as error:
-            raise RuntimeError("Failed unpausing container %s reason: %s" % (name, error.output))
+        container_id = self.get_container_id(name=name)
+        self.docker_client.unpause(container_id)
 
     def stop_container(self, name):
         """Stop the container.
 
         :param str name: container name as it appears in the docker compose file.
         """
-        self.validate_service_name(name)
         log.debug("Stopping %s container", name)
-        try:
-            subprocess.check_output(
-                ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'stop', name],
-                stderr=subprocess.STDOUT, env=self.environment_variables
-            )
-        except subprocess.CalledProcessError as error:
-            raise RuntimeError("Failed stopping container %s reason: %s" % (name, error.output))
+        container_id = self.get_container_id(name=name)
+        self.docker_client.stop(container_id)
 
     def start_container(self, name):
         """Start the container.
 
         :param str name: container name as it appears in the docker compose file.
         """
-        self.validate_service_name(name)
         log.debug("Starting %s container", name)
-        try:
-            subprocess.check_output(
-                ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'start', name],
-                stderr=subprocess.STDOUT, env=self.environment_variables
-            )
-        except subprocess.CalledProcessError as error:
-            raise RuntimeError("Failed starting container %s reason: %s" % (name, error.output))
+        container_id = self.get_container_id(name=name)
+        self.docker_client.start(container_id)
 
-    def get_container_id(self, name):
-        """Get container id by name.
+    def inspect_container(self, name):
+        """Returns the inspect content of a container
 
-        :param str name: container name as it appears in the docker compose file.
+        :param name: name of container
         """
-        self.validate_service_name(name)
-
-        # Filter the required container by container name docker-compose project.
-        # Since the python docker client support filtering only by one label, the second filter is done manually
-        filters = {
-            "label": "com.docker.compose.service={service}".format(service=name)
-        }
-        containers = self.docker_client.containers(filters=filters)
-        containers = [container for container in containers
-                      if 'com.docker.compose.project' in container['Labels'] and
-                      container['Labels']['com.docker.compose.project'] == self.project_name]
-        if len(containers) != 1:
-            raise RuntimeError("Unexpected containers number (%d) were found for name %s and project %s" % (len(containers), name, self.project_name))
-        return containers[0]['Id']
+        log.debug("Inspecting %s container", name)
+        container_id = self.get_container_id(name)
+        return self.docker_client.inspect_container(container_id)
 
     def is_container_ready(self, name):
         """Return True if the container is in ready state.
@@ -278,7 +241,7 @@ class EnvironmentController(object):
 
         :param str name: container name as it appears in the docker compose file.
         """
-        status_output = self._inspect(name)['State']
+        status_output = self.inspect_container(name)['State']
 
         if 'Health' in status_output:
             is_ready = status_output['Health']['Status'] == "healthy"
@@ -293,7 +256,7 @@ class EnvironmentController(object):
 
         :param str name: container name as it appears in the docker compose file.
         """
-        return self._inspect(name)['State']['Status']
+        return self.inspect_container(name)['State']['Status']
 
     def wait_for_services(self, services=None, interval=1, timeout=60):
         """Wait for the services checks to pass.
@@ -325,12 +288,12 @@ class EnvironmentController(object):
         >>>
         >>> # container will be back up after context end
         """
-        self.validate_service_name(name)
-        self.kill_container(name=name)
+        container_id = self.get_container_id(name)
+        self.docker_client.kill(container_id)
         try:
             yield
         finally:
-            self.restart_container(name=name)
+            self.docker_client.restart(container_id)
             self.wait_for_health(name=name, health_check=health_check, interval=interval, timeout=timeout)
 
     @contextmanager
@@ -352,12 +315,12 @@ class EnvironmentController(object):
         >>>
         >>> # container will be back up after context end
         """
-        self.validate_service_name(name)
-        self.pause_container(name=name)
+        container_id = self.get_container_id(name)
+        self.docker_client.pause(container_id)
         try:
             yield
         finally:
-            self.unpause_container(name=name)
+            self.docker_client.unpause(container_id)
             self.wait_for_health(name=name, health_check=health_check, interval=interval, timeout=timeout)
 
     @contextmanager
@@ -379,12 +342,12 @@ class EnvironmentController(object):
         >>>
         >>> # container will be back up after context end
         """
-        self.validate_service_name(name)
-        self.stop_container(name=name)
+        container_id = self.get_container_id(name)
+        self.docker_client.stop(container_id)
         try:
             yield
         finally:
-            self.start_container(name=name)
+            self.docker_client.start(container_id)
             self.wait_for_health(name=name, health_check=health_check, interval=interval, timeout=timeout)
 
     def wait_for_health(self, name, health_check=None, interval=1, timeout=60):
@@ -399,10 +362,6 @@ class EnvironmentController(object):
         health_check = health_check if health_check else lambda: self.is_container_ready(name)
         waiting.wait(health_check, sleep_seconds=interval, timeout_seconds=timeout)
 
-    def validate_service_name(self, name):
-        if name not in self.services:
-            raise ValueError('Invalid service name: %r, must be one of %s' % (name, self.services))
-
     @staticmethod
     def _get_environment_variables():
         """Set the compose api version according to the server's api version"""
@@ -416,14 +375,25 @@ class EnvironmentController(object):
         for plugin in self.plugins:
             plugin.update(message=message)
 
-    def _inspect(self, name):
-        """
-        Returns the inspect content of a container
-        :param name: name of container
+    def get_container_id(self, name):
+        """Get container id by name.
+
+        :param str name: container name as it appears in the docker compose file.
         """
         self.validate_service_name(name)
-        log.debug("Getting %s container state", name)
-        container_id = self.get_container_id(name)
-        inspect_output = self.docker_client.inspect_container(container_id)
 
-        return inspect_output
+        # Filter the required container by container name docker-compose project.
+        # Since the python docker client support filtering only by one label, the second filter is done manually
+        filters = {"label": "com.docker.compose.service={service}".format(service=name)}
+        containers = self.docker_client.containers(filters=filters)
+        containers = [container for container in containers
+                      if 'com.docker.compose.project' in container['Labels'] and
+                      container['Labels']['com.docker.compose.project'] == self.project_name]
+        if len(containers) != 1:
+            raise RuntimeError("Unexpected containers number (%d) were found for name %s and project %s" % (
+                len(containers), name, self.project_name))
+        return containers[0]['Id']
+
+    def validate_service_name(self, name):
+        if name not in self.services:
+            raise ValueError('Invalid service name: %r, must be one of %s' % (name, self.services))
