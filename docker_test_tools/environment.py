@@ -97,7 +97,7 @@ class EnvironmentController(object):
         try:
             log.debug("Setting up the environment")
             self.cleanup()
-            self.run_containers()
+            self.up()
 
             for plugin in self.plugins:
                 try:
@@ -134,41 +134,29 @@ class EnvironmentController(object):
             log.warning("Container reuse enabled: Skipping environment cleanup")
             return
 
-        self.kill_containers()
-        self.remove_containers()
+        self.down()
 
-    def run_containers(self):
+    def up(self):
         """Run environment containers."""
-        log.debug("Running environment containers, using docker compose: %s", self.compose_path)
+        log.debug("Setting environment up, using docker compose: %s", self.compose_path)
         try:
             subprocess.check_output(
                 ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'up', '--build', '-d'],
                 stderr=subprocess.STDOUT, env=self.environment_variables
             )
         except subprocess.CalledProcessError as error:
-            raise RuntimeError("Failed running environment containers, reason: %s" % error.output)
+            raise RuntimeError("Failed setting up environment, reason: %s" % error.output)
 
-    def remove_containers(self):
-        """Remove the environment containers."""
-        log.debug("Removing environment containers, using docker compose: %s", self.compose_path)
+    def down(self):
+        """Run environment containers."""
+        log.debug("Taking environment down, using docker compose: %s", self.compose_path)
         try:
             subprocess.check_output(
-                ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'rm', '-f'],
+                ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'down'],
                 stderr=subprocess.STDOUT, env=self.environment_variables
             )
         except subprocess.CalledProcessError as error:
-            raise RuntimeError("Failed removing environment containers, reason: %s" % error.output)
-
-    def kill_containers(self):
-        """Kill the environment containers."""
-        log.debug("Killing environment containers, using docker compose: %s", self.compose_path)
-        try:
-            subprocess.check_output(
-                ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'kill'],
-                stderr=subprocess.STDOUT, env=self.environment_variables
-            )
-        except subprocess.CalledProcessError as error:
-            raise RuntimeError("Failed killing environment containers, reason: %s" % error.output)
+            raise RuntimeError("Failed taking environment down, reason: %s" % error.output)
 
     def kill_container(self, name):
         """Kill the container.

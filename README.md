@@ -72,9 +72,10 @@ e.g `build-container-net: test_tests-network`
 For example: `test_example.py`
 ```python
 import os
-import httplib
 import logging
 import requests
+
+from six.moves import http_client
 
 from docker_test_tools.utils import get_health_check
 from docker_test_tools.base_test import BaseDockerTest
@@ -82,9 +83,12 @@ from docker_test_tools.wiremock import WiremockController
 
 log = logging.getLogger(__name__)
 
+CONSUL_URL = "http://localhost:8500"
+WIREMOCK_URL = "http://localhost:9999"
+
 # Define health check functions for the environment services
-consul_health_check = get_health_check('consul.service', url='http://consul.service:8500')
-mock_service_health_check = get_health_check('mocked.service', url='http://mocked.service:9999/__admin')
+consul_health_check = get_health_check('consul.service', url=CONSUL_URL)
+mock_service_health_check = get_health_check('mocked.service', url=WIREMOCK_URL + '/__admin')
 
 
 class ExampleTest(BaseDockerTest):
@@ -95,73 +99,73 @@ class ExampleTest(BaseDockerTest):
                               mock_service_health_check]
 
     # [OPTIONAL] User defined health checks timeout
-    CHECKS_TIMEOUT = 60
+    CHECKS_TIMEOUT = 10
 
     def setUp(self):
         """Create a wiremock controller and add a cleanup for it."""
         super(ExampleTest, self).setUp()
 
-        self.wiremock = WiremockController(url='http://mocked.service:9999')
+        self.wiremock = WiremockController(url=WIREMOCK_URL)
         self.addCleanup(self.wiremock.reset_mapping)
 
     def test_services_sanity(self):
         """Validate services are responsive once the test start."""
-        logging.info('Validating consul container is responsive')
-        self.assertEquals(requests.get('http://consul.service:8500').status_code, httplib.OK)
+        log.info('Validating consul container is responsive')
+        self.assertEquals(requests.get(CONSUL_URL).status_code, http_client.OK)
 
-        logging.info('Validating wiremock container is responsive')
-        self.assertEquals(requests.get('http://mocked.service:9999/__admin').status_code, httplib.OK)
+        log.info('Validating wiremock container is responsive')
+        self.assertEquals(requests.get(WIREMOCK_URL + '/__admin').status_code, http_client.OK)
 
     def test_service_down(self):
         """Validate service down scenario."""
-        logging.info('Validating consul container is responsive')
-        self.assertEquals(requests.get('http://consul.service:8500').status_code, httplib.OK)
+        log.info('Validating consul container is responsive')
+        self.assertEquals(requests.get(CONSUL_URL).status_code, http_client.OK)
 
-        logging.info('Validating consul container is unresponsive while in `container_down` context')
+        log.info('Validating consul container is unresponsive while in `container_down` context')
         with self.controller.container_down(name='consul.service', health_check=consul_health_check):
             with self.assertRaises(requests.ConnectionError):
-                requests.get('http://consul.service:8500')
+                requests.get(CONSUL_URL)
 
-        logging.info('Validating consul container has recovered and is responsive')
-        self.assertEquals(requests.get('http://consul.service:8500').status_code, httplib.OK)
+        log.info('Validating consul container has recovered and is responsive')
+        self.assertEquals(requests.get(CONSUL_URL).status_code, http_client.OK)
 
     def test_service_stopped(self):
         """Validate service stopped scenario."""
-        logging.info('Validating consul container is responsive')
-        self.assertEquals(requests.get('http://consul.service:8500').status_code, httplib.OK)
+        log.info('Validating consul container is responsive')
+        self.assertEquals(requests.get(CONSUL_URL).status_code, http_client.OK)
 
-        logging.info('Validating consul container is unresponsive while in `container_stopped` context')
+        log.info('Validating consul container is unresponsive while in `container_stopped` context')
         with self.controller.container_stopped(name='consul.service', health_check=consul_health_check):
             with self.assertRaises(requests.ConnectionError):
-                requests.get('http://consul.service:8500')
+                requests.get(CONSUL_URL)
 
-        logging.info('Validating consul container has recovered and is responsive')
-        self.assertEquals(requests.get('http://consul.service:8500').status_code, httplib.OK)
+        log.info('Validating consul container has recovered and is responsive')
+        self.assertEquals(requests.get(CONSUL_URL).status_code, http_client.OK)
 
     def test_service_paused(self):
         """Validate service paused scenario."""
-        logging.info('Validating consul container is responsive')
-        self.assertEquals(requests.get('http://consul.service:8500', timeout=2).status_code, httplib.OK)
+        log.info('Validating consul container is responsive')
+        self.assertEquals(requests.get(CONSUL_URL, timeout=2).status_code, http_client.OK)
 
-        logging.info('Validating consul container is unresponsive while in `container_paused` context')
+        log.info('Validating consul container is unresponsive while in `container_paused` context')
         with self.controller.container_paused(name='consul.service', health_check=consul_health_check):
             with self.assertRaises(requests.Timeout):
-                requests.get('http://consul.service:8500', timeout=2)
+                requests.get(CONSUL_URL, timeout=2)
 
-        logging.info('Validating consul container has recovered and is responsive')
-        self.assertEquals(requests.get('http://consul.service:8500', timeout=2).status_code, httplib.OK)
+        log.info('Validating consul container has recovered and is responsive')
+        self.assertEquals(requests.get(CONSUL_URL, timeout=2).status_code, http_client.OK)
 
     def test_mocked_service_configuration(self):
         """Validate wiremock service."""
-        logging.info('Validating mocked service fail to find `test` endpoint')
-        self.assertEquals(requests.post('http://mocked.service:9999/test').status_code, httplib.NOT_FOUND)
+        log.info('Validating mocked service fail to find `test` endpoint')
+        self.assertEquals(requests.post(WIREMOCK_URL + '/test').status_code, http_client.NOT_FOUND)
 
-        logging.info('Use WiremockController to stub the service `test` endpoint')
+        log.info('Use WiremockController to stub the service `test` endpoint')
         stubs_dir_path = os.path.join(os.path.dirname(__file__), '..', 'resources', 'wiremock_stubs')
         self.wiremock.set_mapping_from_dir(stubs_dir_path)
 
-        logging.info('Validating mocked service response on `test` endpoint')
-        self.assertEquals(requests.post('http://mocked.service:9999/test').status_code, httplib.OK)
+        log.info('Validating mocked service response on `test` endpoint')
+        self.assertEquals(requests.post(WIREMOCK_URL + '/test').status_code, http_client.OK)
 ```
 
 ## Integrating With `nose2`

@@ -9,8 +9,12 @@ services:
   consul.service:
     image: consul
     networks: [tests-network]
+    ports:
+      - 8500:8500
 
   mocked.service:
     image: stratoscale/wiremock:latest
     networks: [tests-network]
     command: "9999"
+    ports:
+      - 9999:9999

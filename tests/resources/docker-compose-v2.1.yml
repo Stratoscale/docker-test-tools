@@ -9,6 +9,8 @@ services:
   consul.service:
     image: consul
     networks: [tests-network]
+    ports:
+      - 8500:8500
 
     # [OPTIONAL] healthcheck definition requires docker version > 1.12.
     healthcheck:
@@ -20,6 +22,8 @@ services:
     image: stratoscale/wiremock:latest
     networks: [tests-network]
     command: "9999"
+    ports:
+      - 9999:9999
 
     # [OPTIONAL] healthcheck definition requires docker version > 1.12.
     healthcheck:

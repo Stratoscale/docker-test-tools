@@ -39,21 +39,15 @@ services:
     @mock.patch("subprocess.check_output")
     def test_environment_general_methods_happy_flow(self, mocked_check_output):
         """Validate environment controller general methods behave as expected."""
-        self.controller.run_containers()
+        self.controller.up()
         mocked_check_output.assert_called_with(
             ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'up', '--build', '-d'],
             stderr=subprocess.STDOUT, env=self.ENVIRONMENT_VARIABLES
         )
 
-        self.controller.kill_containers()
+        self.controller.down()
         mocked_check_output.assert_called_with(
-            ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'kill'],
-            stderr=subprocess.STDOUT, env=self.ENVIRONMENT_VARIABLES
-        )
-
-        self.controller.remove_containers()
-        mocked_check_output.assert_called_with(
-            ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'rm', '-f'],
+            ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'down'],
             stderr=subprocess.STDOUT, env=self.ENVIRONMENT_VARIABLES
         )
 
@@ -120,19 +114,13 @@ services:
         """Validate environment controller methods in cases compose command fails."""
 
         with self.assertRaises(RuntimeError):
-            self.controller.run_containers()
+            self.controller.up()
 
         with self.assertRaises(RuntimeError):
-            self.controller.kill_containers()
+            self.controller.down()
 
         with self.assertRaises(RuntimeError):
             self.controller.get_services()
-
-        with self.assertRaises(RuntimeError):
-            self.controller.remove_containers()
-
-        with self.assertRaises(RuntimeError):
-            self.controller.kill_container('test')
 
         with self.assertRaises(RuntimeError):
             self.controller.restart_container('test')
@@ -221,50 +209,43 @@ services:
                     mock_is_ready.assert_called_with('service1')
                     mock_start.assert_called_with(test_id)
 
-    @mock.patch('docker_test_tools.environment.EnvironmentController.kill_containers')
-    @mock.patch('docker_test_tools.environment.EnvironmentController.remove_containers')
-    @mock.patch('docker_test_tools.environment.EnvironmentController.run_containers')
+    @mock.patch('docker_test_tools.environment.EnvironmentController.down')
+    @mock.patch('docker_test_tools.environment.EnvironmentController.up')
     @mock.patch('docker_test_tools.logs.LogCollector.start')
-    def test_setup(self, start_collection_mock, run_mock, remove_mock, kill_mock):
+    def test_setup(self, start_collection_mock, up_mock, down_mock):
         """Validate the environment setup method."""
         self.controller.setup()
-        kill_mock.assert_called_once_with()
-        remove_mock.assert_called_once_with()
-        run_mock.assert_called_once_with()
+        down_mock.assert_called_once_with()
+        up_mock.assert_called_once_with()
         start_collection_mock.assert_called_once_with()
 
     @mock.patch('docker_test_tools.environment.EnvironmentController.teardown')
-    @mock.patch('docker_test_tools.environment.EnvironmentController.kill_containers')
-    @mock.patch('docker_test_tools.environment.EnvironmentController.remove_containers')
-    @mock.patch('docker_test_tools.environment.EnvironmentController.run_containers')
-    def test_setup_failure(self, run_mock, remove_mock, kill_mock, tear_down_mock):
+    @mock.patch('docker_test_tools.environment.EnvironmentController.down')
+    @mock.patch('docker_test_tools.environment.EnvironmentController.up')
+    def test_setup_failure(self, up_mock, down_mock, tear_down_mock):
         """Validate the environment setup method - failure scenario."""
-        run_mock.side_effect = Exception('unexpected-error')
+        up_mock.side_effect = Exception('unexpected-error')
 
         with self.assertRaises(Exception):
             self.controller.setup()
 
-        kill_mock.assert_called_once_with()
-        remove_mock.assert_called_once_with()
+        down_mock.assert_called_once_with()
         tear_down_mock.assert_called_once_with()
 
     @mock.patch('docker_test_tools.environment.EnvironmentController.get_services', mock.MagicMock())
-    @mock.patch('docker_test_tools.environment.EnvironmentController.kill_containers')
-    @mock.patch('docker_test_tools.environment.EnvironmentController.remove_containers')
+    @mock.patch('docker_test_tools.environment.EnvironmentController.down')
     @mock.patch('docker_test_tools.logs.LogCollector.stop')
-    def test_teardown(self, stop_collection_mock, remove_mock, kill_mock):
+    def test_teardown(self, stop_collection_mock, down_mock):
         """Validate the environment teardown method."""
         self.controller.teardown()
-        kill_mock.assert_called_once_with()
-        remove_mock.assert_called_once_with()
+        down_mock.assert_called_once_with()
         stop_collection_mock.assert_called_once_with()
 
     @mock.patch('docker_test_tools.environment.EnvironmentController.get_services', mock.MagicMock())
-    @mock.patch('docker_test_tools.environment.EnvironmentController.kill_containers')
-    @mock.patch('docker_test_tools.environment.EnvironmentController.remove_containers')
-    @mock.patch('docker_test_tools.environment.EnvironmentController.run_containers')
+    @mock.patch('docker_test_tools.environment.EnvironmentController.down')
+    @mock.patch('docker_test_tools.environment.EnvironmentController.up')
     @mock.patch('docker_test_tools.logs.LogCollector.start')
-    def test_setup_with_reuse(self, start_collection_mock, run_mock, remove_mock, kill_mock):
+    def test_setup_with_reuse(self, start_collection_mock, up_mock, down_mock):
         """Validate the environment setup method when container reuse is enabled."""
 
         controller = environment.EnvironmentController(compose_path=self.compose_path,
@@ -272,24 +253,21 @@ services:
                                                        reuse_containers=True,
                                                        project_name=self.project_name)
         controller.setup()
-        kill_mock.assert_not_called()
-        remove_mock.assert_not_called()
-        run_mock.assert_called_once_with()
+        down_mock.assert_not_called()
+        up_mock.assert_called_once_with()
         start_collection_mock.assert_called_once_with()
 
     @mock.patch('docker_test_tools.environment.EnvironmentController.get_services', mock.MagicMock())
-    @mock.patch('docker_test_tools.environment.EnvironmentController.kill_containers')
-    @mock.patch('docker_test_tools.environment.EnvironmentController.remove_containers')
+    @mock.patch('docker_test_tools.environment.EnvironmentController.down')
     @mock.patch('docker_test_tools.logs.LogCollector.stop')
-    def test_teardown_with_reuse(self, stop_collection_mock, remove_mock, kill_mock):
+    def test_teardown_with_reuse(self, stop_collection_mock, down_mock):
         """Validate the environment teardown method when container reuse is enabled."""
         controller = environment.EnvironmentController(compose_path=self.compose_path,
                                                        log_path=self.log_path,
                                                        reuse_containers=True,
                                                        project_name=self.project_name)
         controller.teardown()
-        kill_mock.assert_not_called()
-        remove_mock.assert_not_called()
+        down_mock.assert_not_called()
         stop_collection_mock.assert_called_once_with()
 
     @mock.patch('docker_test_tools.environment.EnvironmentController.is_container_ready')
