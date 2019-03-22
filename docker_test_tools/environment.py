@@ -229,7 +229,10 @@ class EnvironmentController(object):
 
         :param str name: container name as it appears in the docker compose file.
         """
-        status_output = self.inspect_container(name)['State']
+        try:
+            status_output = self.inspect_container(name)['State']
+        except RuntimeError:
+            return False
 
         if 'Health' in status_output:
             is_ready = status_output['Health']['Status'] == "healthy"
