@@ -15,7 +15,6 @@ log = logging.getLogger(__name__)
 
 class WiremockError(Exception):
     """Raised on wiremock controller failures."""
-    pass
 
 
 class WiremockController(object):
