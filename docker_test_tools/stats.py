@@ -146,6 +146,10 @@ class ClusterStats(object):
             # Split the stat data to it's raw components
             components = json.loads(line)
 
+            if components['name'] == '--':
+                # skip metrics with no service name
+                return
+
             # Handle bad stats metrics
             for key, val in components.items():
                 if '--' in val:
