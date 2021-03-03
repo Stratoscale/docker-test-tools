@@ -1,5 +1,4 @@
-pbr==1.8 ; python_version < '3.0'
-pbr ; python_version >= '3.0'
+pbr==5.5.1 
 docker==3.7.3
 waiting==1.3.0 ; python_version < '3.0'
 waiting ; python_version >= '3.0'
