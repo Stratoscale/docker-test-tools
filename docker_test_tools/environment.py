@@ -81,7 +81,7 @@ class EnvironmentController(object):
         try:
             services_output = subprocess.check_output(
                 ['docker-compose', '-f', self.compose_path, '-p', self.project_name, 'config', '--services'],
-                stderr=subprocess.STDOUT, env=self.environment_variables
+                env=self.environment_variables
             )
 
         except subprocess.CalledProcessError as error:
