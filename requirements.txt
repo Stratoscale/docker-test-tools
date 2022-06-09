@@ -1,4 +1,4 @@
-pbr==3.1.1
+pbr==5.4
 docker==3.7.3
 waiting==1.4.1
 requests==2.20.1
