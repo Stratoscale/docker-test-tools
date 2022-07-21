@@ -11,6 +11,10 @@ services:
     networks: [tests-network]
     ports:
       - 8500:8500
+    ulimits:
+        nofile:
+            soft: 65536
+            hard: 65536
 
   mocked.service:
     image: stratoscale/wiremock:latest
@@ -18,3 +22,7 @@ services:
     command: "9999"
     ports:
       - 9999:9999
+    ulimits:
+        nofile:
+            soft: 65536
+            hard: 65536
