@@ -366,10 +366,11 @@ class EnvironmentController(object):
         for plugin in self.plugins:
             plugin.update(message=message)
 
-    def get_container_id(self, name):
-        """Get container id by name.
+    def _get_container(self, name):
+        """Get container by name.
 
         :param str name: container name as it appears in the docker compose file.
+        :return: container object
         """
         self.validate_service_name(name)
 
@@ -383,8 +384,23 @@ class EnvironmentController(object):
         if len(containers) != 1:
             raise RuntimeError("Unexpected containers number (%d) were found for name %s and project %s" % (
                 len(containers), name, self.project_name))
-        return containers[0]['Id']
+        return containers[0]
+
+    def get_container_id(self, name):
+        """Get container id by name.
+
+        :param str name: container name as it appears in the docker compose file.
+        """
+        return self._get_container(name)['Id']
 
     def validate_service_name(self, name):
         if name not in self.services:
             raise ValueError('Invalid service name: %r, must be one of %s' % (name, self.services))
+
+    def exec_command_in_container(self, name, command):
+        container = self._get_container(name)
+        exit_code, output = container.exec_run(command)
+        if exit_code != 0:
+            raise RuntimeError(
+                "Command {cmd} failed with exit code {exit_code}. Outout: {output}".format(
+                    cmd=command, exit_code=exit_code, output=output))
