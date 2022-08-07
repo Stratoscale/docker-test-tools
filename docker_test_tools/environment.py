@@ -388,3 +388,21 @@ class EnvironmentController(object):
     def validate_service_name(self, name):
         if name not in self.services:
             raise ValueError('Invalid service name: %r, must be one of %s' % (name, self.services))
+
+    def run_exec_in_container(self, name, command):
+        """
+        Execute command in container by container name
+        :param str name: container name.
+        :param str command: command to run in the container.
+        """
+        log.debug("Creating exec instance in container %s", name)
+        container_id = self.get_container_id(name=name)
+        exec_create_output = self.docker_client.exec_create(container_id, command)
+        if not exec_create_output or not exec_create_output.get("Id"):
+            raise RuntimeError("Failed to create exec instance in container %s with command %s" % (name, command))
+        exec_id = exec_create_output.get("Id")
+        log.debug("Starting exec instance in container %s", name)
+        exec_start_output = self.docker_client.exec_start(exec_id)
+        if exec_start_output is None:
+            raise RuntimeError("Failed to start exec instance in container %s with command %s" % (name, command))
+        return exec_start_output
