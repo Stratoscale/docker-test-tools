@@ -1,7 +1,7 @@
 pbr==3.1.1
 docker==3.7.3
 waiting==1.4.1
-requests==2.20.1
+requests==2.31.0
 humanfriendly==2.2.1
 docker-compose==1.24.1
 requests-unixsocket==0.1.5
