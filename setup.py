@@ -2,6 +2,6 @@
 from setuptools import setup
 
 setup(
-    setup_requires=['pbr==3.1.1'],
+    setup_requires=['pbr>=5.5.1 ; python_version >= "3.0"', 'pbr==1.8 ; python_version < "3.0"'],
     pbr=True
 )
