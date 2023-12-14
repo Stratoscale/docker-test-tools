@@ -8,6 +8,9 @@ py36:
 	# Run the internal make file using python 3.6 container
 	skipper --build-container-image=py36-build make
 
+py36-build:
+	skipper --build-container-image=py36-build make build
+
 clean:
 	# Clean any generated files
 	rm -rf build dist docker_test_tools.egg-info .coverage .cache

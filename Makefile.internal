@@ -38,6 +38,8 @@ pytest:
 	DTT_COMPOSE_PATH=$(DTT_COMPOSE_PATH) \
 	pytest -v tests/integration/
 
+build: dist/docker-test-tools-*.tar.gz
+
 dist/docker-test-tools-*.tar.gz:
 	# Create the source distribution
 	python setup.py sdist
