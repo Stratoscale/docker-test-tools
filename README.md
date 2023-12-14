@@ -209,26 +209,57 @@ OK
 ### Define a conftest.py File Describing The Required Fixture
 
 ```python
-"""utilized by in pytest configuration."""
 import pytest
 
-from docker_test_tools.environment import EnvironmentController
-
-controller = EnvironmentController.from_file(config_path='tests/integration/pytest.cfg')
+from docker_test_tools import config
 
 
+# define a fixture to override the default controller configuration
+# default configuration file is defined by `DOCKER_TEST_TOOLS_CONFIG_FILE environment variable`
+@pytest.fixture(scope="session", name="controller_config")
+def fixture_controller_config():
+    return config.Config(config_path="tests/integration/pytest.cfg")
+
+
+# wait for services to be responsive before running the tests
+# this fixture will automatically enable the plugin and create the `controller` fixture
 @pytest.fixture(scope="session", autouse=True)
-def global_setup_teardown():
-    """This function will be executed once per testing session."""
-    controller.setup()
-    yield
-    controller.teardown()
+def fixture_wait(wait_for_services):
+    """Run prior to any test - setup the environment."""
+    _ = wait_for_services
 
 
-def pytest_runtest_setup(item):
-    """Assign the controller as a test class member."""
-    item.parent.obj.controller = controller
+# write test begin/end markers to the logs
+@pytest.fixture(autouse=True)
+def log_start_end(log_test_start_end):
+    """Write a test started/end log message to all logs."""
+    _ = log_test_start_end
+
+    
+# inject the controller instance to the unittest.TestCase
+@pytest.fixture(scope="class")
+def setup_controller(controller, request):
+    """Run on test class setup.
+
+    - Assign the controller object to the test.
+    """
+    request.cls.controller = controller
 ```
+
+### Use services controller fixture in tests
+```python
+
+def test_services_sanity(controller):
+    # take consul.service down
+    controller.container_down(name='consul.service')
+
+    # verify the system is still responsive
+    ...
+    
+    # bring consul.service up
+    controller.container_up(name='consul.service')
+```
+
 
 ### Run the Tests
 ```

@@ -74,7 +74,7 @@ def to_str(value):
     if isinstance(value, bytes):
         return value.decode('utf-8')
 
-    raise Exception("Type {} was not converted to string".format(type(value)))
+    raise RuntimeError("Type {} was not converted to string".format(type(value)))
 
 
 # For backward compatibility

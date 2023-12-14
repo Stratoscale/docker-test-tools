@@ -1,10 +1,15 @@
 import os
-import mock
 import shutil
 import tempfile
 import unittest
 
 from six.moves import configparser
+from six import PY3
+
+if PY3:
+    from unittest import mock
+else:
+    import mock
 
 from docker_test_tools.config import Config
 

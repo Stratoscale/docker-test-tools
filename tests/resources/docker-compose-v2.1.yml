@@ -2,7 +2,7 @@ version: '2.1'
 
 networks:
   tests-network:
-    driver: bridge
+    external: true
 
 services:
 

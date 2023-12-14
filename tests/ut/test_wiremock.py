@@ -1,6 +1,11 @@
-import mock
 from six.moves import http_client
+from six import PY3
 import unittest
+
+if PY3:
+    from unittest import mock
+else:
+    import mock
 
 from docker_test_tools import wiremock
 

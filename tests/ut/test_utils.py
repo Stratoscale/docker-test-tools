@@ -1,5 +1,10 @@
-import mock
 import unittest
+from six import PY3
+
+if PY3:
+    from unittest import mock
+else:
+    import mock
 
 from docker_test_tools import utils
 
