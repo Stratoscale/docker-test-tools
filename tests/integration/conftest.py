@@ -1,24 +1,31 @@
 """utilized by in pytest configuration."""
-from docker_test_tools.environment import EnvironmentController
 
-controller = EnvironmentController.from_file(config_path='tests/integration/pytest.cfg')
+import pytest
+
+from docker_test_tools import config
 
 
-def pytest_configure(config):
+@pytest.fixture(scope="session", name="controller_config")
+def fixture_controller_config():
+    return config.Config(config_path="tests/integration/pytest.cfg")
+
+
+@pytest.fixture(scope="session", autouse=True)
+def fixture_wait(wait_for_services):
     """Run prior to any test - setup the environment."""
-    controller.setup()
+    _ = wait_for_services
 
 
-def pytest_unconfigure(config):
-    """Run post all tests - tear down the environment."""
-    controller.teardown()
-
-
-def pytest_runtest_setup(item):
-    """Run on test start.
+@pytest.fixture(scope="class")
+def setup_controller(controller, request):
+    """Run on test class setup.
 
     - Assign the controller object to the test.
-    - Write a test started log message to the main log file.
     """
-    item.parent.obj.controller = controller
-    controller.update_plugins(item.nodeid)
+    request.cls.controller = controller
+
+
+@pytest.fixture(autouse=True)
+def log_start_end(log_test_start_end):
+    """Write a test started/end log message to all logs."""
+    _ = log_test_start_end

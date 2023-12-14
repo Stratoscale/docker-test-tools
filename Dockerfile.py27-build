@@ -12,3 +12,6 @@ RUN pip install --no-cache-dir -r /tmp/test-requirements.txt
 # Install the package requirements
 COPY requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
+
+COPY . plugin/
+RUN pip install ./plugin

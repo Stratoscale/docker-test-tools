@@ -92,3 +92,7 @@ ENV/
 
 AUTHORS
 ChangeLog
+
+# Visual Studio Code
+.vscode
+.devcontainer

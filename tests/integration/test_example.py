@@ -1,5 +1,7 @@
 import os
 import logging
+
+import pytest
 import requests
 
 from six.moves import http_client
@@ -10,14 +12,15 @@ from docker_test_tools.wiremock import WiremockController
 
 log = logging.getLogger(__name__)
 
-CONSUL_URL = "http://localhost:8500"
-WIREMOCK_URL = "http://localhost:9999"
+CONSUL_URL = "http://consul.service:8500"
+WIREMOCK_URL = "http://mocked.service:9999"
 
 # Define health check functions for the environment services
 consul_health_check = get_health_check('consul.service', url=CONSUL_URL)
 mock_service_health_check = get_health_check('mocked.service', url=WIREMOCK_URL + '/__admin')
 
 
+@pytest.mark.usefixtures("setup_controller")
 class ExampleTest(BaseDockerTest):
     """Usage example test for docker-test-tools."""
 

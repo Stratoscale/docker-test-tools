@@ -1,4 +1,8 @@
 registry: rackattack-nas.dc1:5000
 build-container-image: py27-build
+build-container-net: tests-network
 make:
   makefile: Makefile.internal
+
+env:
+  DOCKER_CONTEXT: default
