@@ -21,13 +21,15 @@ class EnvironmentPlugin(Plugin):
             project_name=self.config.as_str('project-name', Config.DEFAULT_PROJECT_NAME),
             collect_stats=self.config.as_bool('collect-stats', Config.DEFAULT_COLLECT_STATS),
             reuse_containers=self.config.as_bool('reuse-containers', Config.DEFAULT_REUSE_CONTAINERS),
-            docker_compose_path=self.config.as_str('docker-compose-path', Config.DEFAULT_DOCKER_COMPOSE_PATH)
+            docker_compose_path=self.config.as_str('docker-compose-path', Config.DEFAULT_DOCKER_COMPOSE_PATH),
+            docker_compose_command=self.config.as_str('docker-compose-command', Config.DEFAULT_DOCKER_COMPOSE_COMMAND)
         )
         self.controller = EnvironmentController(
             log_path=config.log_path,
             project_name=config.project_name,
             collect_stats=config.collect_stats,
             compose_path=config.docker_compose_path,
+            compose_command=config.docker_compose_command,
             reuse_containers=config.reuse_containers,
         )
         self.controller.setup()

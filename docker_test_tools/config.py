@@ -10,6 +10,7 @@ class Config(object):
     * Docker logs path.
     * Compose project name.
     * Docker compose file path.
+    * Docker compose command [docker-compose | docker compose].
     * Whether or not to keep containers between test runs [True/ False].
 
     The configuration may be set via:
@@ -24,6 +25,7 @@ class Config(object):
         log-path = <docker log path>
         project-name = <compose project name>
         docker-compose-path = <docker compose path>
+        docker-compose-command = <docker compose command>
         reuse-containers = <True/ False>.
 
     Supported environment variables:
@@ -31,6 +33,7 @@ class Config(object):
         DTT_LOG_PATH = <docker log path>
         DTT_PROJECT_NAME = <compose project name>
         DTT_COMPOSE_PATH = <docker compose path>
+        DTT_COMPOSE_COMMAND = <docker compose command>
         DTT_REUSE_CONTAINERS = <1/0>.
         DTT_COLLECT_STATS = <1/0>
 
@@ -43,6 +46,7 @@ class Config(object):
     PROJECT_NAME_OPTION = 'project-name'
     REUSE_CONTAINERS_OPTION = 'reuse-containers'
     DOCKER_COMPOSE_PATH_OPTION = 'docker-compose-path'
+    DOCKER_COMPOSE_COMMAND_OPTION = 'docker-compose-command'
     COLLECT_STATS_OPTION = 'collect-stats'
 
     # Expected options in the configuration file
@@ -50,6 +54,7 @@ class Config(object):
     PROJECT_NAME_ENV_VAR = 'DTT_PROJECT_NAME'
     REUSE_CONTAINERS_ENV_VAR = 'DTT_REUSE_CONTAINERS'
     DOCKER_COMPOSE_PATH_ENV_VAR = 'DTT_COMPOSE_PATH'
+    DOCKER_COMPOSE_COMMAND_ENV_VAR = 'DTT_COMPOSE_COMMAND'
     COLLECT_STATS_ENV_VAR = 'DTT_COLLECT_STATS'
 
     # Configuration default values
@@ -57,6 +62,7 @@ class Config(object):
     DEFAULT_PROJECT_NAME = 'docker-tests'
     DEFAULT_REUSE_CONTAINERS = False
     DEFAULT_DOCKER_COMPOSE_PATH = 'docker-compose.yml'
+    DEFAULT_DOCKER_COMPOSE_COMMAND = 'docker-compose'
     DEFAULT_COLLECT_STATS = False
 
     def __init__(self,
@@ -65,7 +71,8 @@ class Config(object):
                  project_name=DEFAULT_PROJECT_NAME,
                  collect_stats=DEFAULT_COLLECT_STATS,
                  reuse_containers=DEFAULT_REUSE_CONTAINERS,
-                 docker_compose_path=DEFAULT_DOCKER_COMPOSE_PATH):
+                 docker_compose_path=DEFAULT_DOCKER_COMPOSE_PATH,
+                 docker_compose_command=DEFAULT_DOCKER_COMPOSE_COMMAND):
 
         # Set default values
         self.log_path = log_path
@@ -73,6 +80,7 @@ class Config(object):
         self.collect_stats = collect_stats
         self.reuse_containers = reuse_containers
         self.docker_compose_path = docker_compose_path
+        self.docker_compose_command = docker_compose_command
 
         # Update the config values based on the config file (overrides constructor configurations)
         if config_path:
@@ -88,6 +96,7 @@ class Config(object):
         self.collect_stats = os.environ.get(self.COLLECT_STATS_ENV_VAR, self.collect_stats)
         self.reuse_containers = os.environ.get(self.REUSE_CONTAINERS_ENV_VAR, self.reuse_containers)
         self.docker_compose_path = os.environ.get(self.DOCKER_COMPOSE_PATH_ENV_VAR, self.docker_compose_path)
+        self.docker_compose_command = os.environ.get(self.DOCKER_COMPOSE_COMMAND_ENV_VAR, self.docker_compose_command)
 
     def get_file_config(self, config_path):
         """Update the config values based on the config file."""
@@ -112,3 +121,6 @@ class Config(object):
 
         if self.DOCKER_COMPOSE_PATH_OPTION in read_options:
             self.docker_compose_path = config_reader.get(self.SECTION_NAME, self.DOCKER_COMPOSE_PATH_OPTION)
+
+        if self.DOCKER_COMPOSE_COMMAND_OPTION in read_options:
+            self.docker_compose_command = config_reader.get(self.SECTION_NAME, self.DOCKER_COMPOSE_COMMAND_OPTION)
