@@ -14,7 +14,6 @@ class Compose:
         self.logs_process = None
 
     def get_services(self):
-        print(self.command)
         return self.__try_run_or_raise(
             command_args=["config", "--services"],
             error_message="Failed getting the compose services",
