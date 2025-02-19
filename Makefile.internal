@@ -1,11 +1,12 @@
 # *** WARNING: Targets are meant to run in a build container - Use skipper make ***
 
-# Get docker api version and set the compose file version accordingly
+
+VERSION = $(shell python setup.py --version)
 DOCKER_API_VERSION = $(shell python docker_test_tools/api_version.py)
 COMPOSE_FILE_VERSION = $(shell python -c 'print("2.1" if "$(DOCKER_API_VERSION)" >= "1.24" else "2")')
 DTT_COMPOSE_PATH=tests/resources/docker-compose-v$(COMPOSE_FILE_VERSION).yml
 
-all: pylint flake8 coverage nose2 pytest dist/docker-test-tools-*.tar.gz
+all: pylint flake8 coverage nose2 pytest wheel
 
 flake8:
 	flake8 docker_test_tools
@@ -37,11 +38,12 @@ pytest:
 	DTT_COMPOSE_PATH=$(DTT_COMPOSE_PATH) \
 	pytest -v tests/integration/
 
-build: dist/docker-test-tools-*.tar.gz
+build/%.whl: setup.py docker_test_tools
+	rm -rf build/docker_test_tools-*.whl
+	python -m build --wheel --outdir $(PWD)/build/ ./
+	rm -rf dist *.egg-info build/lib build/bdist*
 
-dist/docker-test-tools-*.tar.gz:
-	# Create the source distribution
-	python setup.py sdist
+wheel: build/docker_test_tools-$(VERSION)-py2.py3-none-any.whl
 
 clean:
 	# Clean any generated files

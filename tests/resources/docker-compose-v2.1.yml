@@ -7,7 +7,7 @@ networks:
 services:
 
   consul.service:
-    image: consul
+    image: consul:1.15.4
     networks: [tests-network]
     ports:
       - 8500:8500
