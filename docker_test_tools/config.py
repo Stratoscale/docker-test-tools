@@ -62,7 +62,7 @@ class Config(object):
     DEFAULT_PROJECT_NAME = 'docker-tests'
     DEFAULT_REUSE_CONTAINERS = False
     DEFAULT_DOCKER_COMPOSE_PATH = 'docker-compose.yml'
-    DEFAULT_DOCKER_COMPOSE_COMMAND = 'docker-compose'
+    DEFAULT_DOCKER_COMPOSE_COMMAND = 'docker compose'
     DEFAULT_COLLECT_STATS = False
 
     def __init__(self,

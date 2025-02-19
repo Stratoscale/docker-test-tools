@@ -6,10 +6,15 @@ from docker_test_tools import utils
 class Compose:
     def __init__(self, compose_path, project_name, environment_variables, command):
         self.__environment_variables = environment_variables
-        self.command = command.split(" ") + ["-f", compose_path, "-p", project_name]
+        self.command = command.split(" ")
+        if compose_path:
+            self.command.append("-f")
+            self.command.append(compose_path)
+        self.command += ["-p", project_name]
         self.logs_process = None
 
     def get_services(self):
+        print(self.command)
         return self.__try_run_or_raise(
             command_args=["config", "--services"],
             error_message="Failed getting the compose services",

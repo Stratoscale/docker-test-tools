@@ -1,2 +1,2 @@
 pips:
-  - dist/docker-test-tools-*.tar.gz
+  - build/docker_test_tools-*.whl
